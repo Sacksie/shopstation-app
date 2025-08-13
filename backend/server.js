@@ -1,87 +1,53 @@
-// server.js - Main backend server
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
-
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Import routes
+const receiptRoutes = require('./routes/receipts');
+const wholesaleRoutes = require('./routes/wholesale');
+const db = require('./database/kosher-db');
+const manualEntryRoutes = require('./routes/manual-entry');
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
 
-// Rate limiting to prevent abuse
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/api/', limiter);
+// Use routes
+app.use('/api/receipts', receiptRoutes);
+app.use('/api/wholesale', wholesaleRoutes);
+app.use('/api/manual', manualEntryRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Mock grocery comparison endpoint (we'll add real scraping later)
-app.post('/api/compare-groceries', async (req, res) => {
-  try {
-    const { groceryList } = req.body;
-    
-    if (!groceryList || !Array.isArray(groceryList) || groceryList.length === 0) {
-      return res.status(400).json({ 
-        error: 'Invalid grocery list. Please provide an array of grocery items.' 
-      });
-    }
-
-    console.log(`Processing grocery list: ${groceryList.join(', ')}`);
-    
-    // Mock results for testing
-    const mockResults = [
-      {
-        name: 'ASDA',
-        logo: '🏪',
-        rating: 4.0,
-        totalPrice: 15.50,
-        savings: 0,
-        items: groceryList.map(item => ({
-          searchTerm: item,
-          name: item,
-          price: 2.00,
-          available: true
-        }))
-      },
-      {
-        name: 'Tesco',
-        logo: '🛒',
-        rating: 4.2,
-        totalPrice: 16.75,
-        savings: -1.25,
-        items: groceryList.map(item => ({
-          searchTerm: item,
-          name: item,
-          price: 2.15,
-          available: true
-        }))
-      }
-    ];
-    
-    res.json({
-      success: true,
-      totalItems: groceryList.length,
-      stores: mockResults,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('Error processing grocery comparison:', error);
-    res.status(500).json({ 
-      error: 'Failed to process grocery comparison',
-      message: error.message 
-    });
-  }
+// Main grocery comparison endpoint using database
+app.post('/api/compare-groceries', (req, res) => {
+  const { groceryList } = req.body;
+  
+  // Use database for comparison
+  const comparison = db.compareShops(groceryList);
+  
+  // Format for frontend
+  const stores = Object.entries(comparison).map(([storeName, data], index) => ({
+    name: storeName,
+    logo: storeName === 'B Kosher' ? '🕍' : 
+          storeName === 'Tapuach' ? '🍎' :
+          storeName === 'Kosher Kingdom' ? '👑' : '🛒',
+    rating: 4.0 + Math.random() * 0.5,
+    totalPrice: data.total,
+    items: data.available,
+    missing: data.missing
+  }));
+  
+  // Sort by price
+  stores.sort((a, b) => a.totalPrice - b.totalPrice);
+  
+  res.json({
+    success: true,
+    totalItems: groceryList.length,
+    stores: stores
+  });
 });
 
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Grocery comparison server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -1,0 +1,28 @@
+{
+  "stores": {
+    "B Kosher": {
+      "location": "Address here",
+      "phone": "",
+      "hours": "Sun-Thu: 9-7, Fri: 9-2"
+    },
+    "Tapuach": {
+      "location": "Address here",
+      "phone": "",
+      "hours": "Sun-Thu: 8-8, Fri: 8-3"
+    },
+    "Kosher Kingdom": {
+      "location": "Address here",
+      "phone": "",
+      "hours": "Sun-Thu: 9-7, Fri: 9-2"
+    },
+    "Kays": {
+      "location": "Address here",
+      "phone": "",
+      "hours": "Sun-Thu: 9-6, Fri: 9-1"
+    }
+  },
+  "products": {},
+  "receipts": [],
+  "priceHistory": [],
+  "lastUpdated": "2025-08-13T05:43:05.818Z"
+}
