@@ -1,0 +1,271 @@
+{
+  "stores": {
+    "B Kosher": {
+      "location": "Hendon Brent Street",
+      "phone": "020 3210 4000",
+      "hours": "Sun: 8am-10pm, Mon-Wed: 730am-10pm, Thu: 7am-11pm, Fri: 7am-3pm",
+      "rating": 4.2
+    },
+    "Tapuach": {
+      "location": "Hendon",
+      "phone": "020 8202 5700",
+      "hours": "Sun: 8am-10pm, Mon-Wed: 7am-11pm, Thu: 7am-12am, Fri: 8am-530pm",
+      "rating": 4
+    },
+    "Kosher Kingdom": {
+      "location": "Golders Green",
+      "phone": "020 8455 1429",
+      "hours": "Sun-Tue: 7am-10pm, Wed-Thu: 7am-12am, Fri: 7am-6.30pm",
+      "rating": 4.5
+    },
+    "Kays": {
+      "location": "Hendon",
+      "phone": "020 8202 9999",
+      "hours": "Sun-Thu: 8am-9pm, Fri: 8am-2pm",
+      "rating": 3.8
+    }
+  },
+  "products": {
+    "milk": {
+      "displayName": "Milk (2 pint)",
+      "category": "dairy",
+      "synonyms": [
+        "fresh milk",
+        "2 pint milk",
+        "whole milk",
+        "semi skimmed milk"
+      ],
+      "commonBrands": [
+        "Golden Flow",
+        "Chalav"
+      ],
+      "prices": {
+        "B Kosher": {
+          "price": 2.5,
+          "unit": "2 pints",
+          "lastUpdated": "2025-08-21T11:53:24.142Z"
+        },
+        "Tapuach": {
+          "price": 2.75,
+          "unit": "2 pints",
+          "lastUpdated": "2025-08-21T11:53:24.145Z"
+        },
+        "Kosher Kingdom": {
+          "price": 2.4,
+          "unit": "2 pints",
+          "lastUpdated": "2025-08-21T11:53:24.146Z"
+        }
+      }
+    },
+    "challah": {
+      "displayName": "Challah",
+      "category": "bakery",
+      "synonyms": [
+        "challa",
+        "challah bread",
+        "shabbat bread",
+        "plaited bread"
+      ],
+      "commonBrands": [
+        "Jerusalem Bakery",
+        "Grodzinski"
+      ],
+      "prices": {
+        "B Kosher": {
+          "price": 3.5,
+          "unit": "loaf",
+          "lastUpdated": "2025-08-21T11:53:24.146Z"
+        },
+        "Tapuach": {
+          "price": 3.75,
+          "unit": "loaf",
+          "lastUpdated": "2025-08-21T11:53:24.147Z"
+        },
+        "Kays": {
+          "price": 3.25,
+          "unit": "loaf",
+          "lastUpdated": "2025-08-21T11:53:24.147Z"
+        }
+      }
+    },
+    "chicken": {
+      "displayName": "Chicken (whole)",
+      "category": "meat",
+      "synonyms": [
+        "whole chicken",
+        "roasting chicken",
+        "fresh chicken"
+      ],
+      "commonBrands": [
+        "Tesco",
+        "Asda",
+        "Empire Kosher"
+      ],
+      "prices": {
+        "B Kosher": {
+          "price": 8.99,
+          "unit": "kg",
+          "lastUpdated": "2025-08-21T11:53:24.148Z"
+        },
+        "Kosher Kingdom": {
+          "price": 9.5,
+          "unit": "kg",
+          "lastUpdated": "2025-08-21T11:53:24.148Z"
+        }
+      }
+    },
+    "eggs": {
+      "displayName": "Eggs (dozen)",
+      "category": "dairy",
+      "synonyms": [
+        "dozen eggs",
+        "large eggs",
+        "medium eggs",
+        "free range eggs"
+      ],
+      "commonBrands": [
+        "Happy Egg Co",
+        "Clarence Court"
+      ],
+      "prices": {
+        "Tapuach": {
+          "price": 3.2,
+          "unit": "dozen",
+          "lastUpdated": "2025-08-21T11:53:24.149Z"
+        },
+        "B Kosher": {
+          "price": 2.95,
+          "unit": "dozen",
+          "lastUpdated": "2025-08-21T11:53:24.150Z"
+        },
+        "Kosher Kingdom": {
+          "price": 3.1,
+          "unit": "dozen",
+          "lastUpdated": "2025-08-21T11:53:24.150Z"
+        },
+        "Kays": {
+          "price": 3.3,
+          "unit": "dozen",
+          "lastUpdated": "2025-08-21T11:53:24.151Z"
+        }
+      }
+    },
+    "chicken_breast": {
+      "displayName": "Chicken Breast",
+      "category": "meat",
+      "synonyms": [
+        "chicken breasts",
+        "boneless chicken",
+        "chicken fillet"
+      ],
+      "commonBrands": [
+        "Tesco",
+        "Empire Kosher"
+      ],
+      "prices": {}
+    },
+    "butter": {
+      "displayName": "Butter",
+      "category": "dairy",
+      "synonyms": [
+        "unsalted butter",
+        "salted butter",
+        "block butter"
+      ],
+      "commonBrands": [
+        "Anchor",
+        "Lurpak",
+        "Kerrygold"
+      ],
+      "prices": {
+        "B Kosher": {
+          "price": 4.2,
+          "unit": "pack",
+          "lastUpdated": "2025-08-21T11:53:24.156Z"
+        },
+        "Tapuach": {
+          "price": 3.95,
+          "unit": "pack",
+          "lastUpdated": "2025-08-21T11:53:24.156Z"
+        }
+      }
+    },
+    "grape_juice": {
+      "displayName": "Grape Juice",
+      "category": "beverages",
+      "synonyms": [
+        "red grape juice",
+        "white grape juice",
+        "kosher grape juice"
+      ],
+      "commonBrands": [
+        "Kedem",
+        "Bartenura"
+      ],
+      "prices": {
+        "Kosher Kingdom": {
+          "price": 5.5,
+          "unit": "bottle",
+          "lastUpdated": "2025-08-21T11:53:24.157Z"
+        },
+        "Kays": {
+          "price": 5.25,
+          "unit": "bottle",
+          "lastUpdated": "2025-08-21T11:53:24.157Z"
+        }
+      }
+    }
+  },
+  "categories": {
+    "dairy": {
+      "name": "Dairy & Eggs",
+      "description": "Milk, cheese, butter, eggs and dairy products",
+      "icon": "🥛"
+    },
+    "meat": {
+      "name": "Meat & Fish",
+      "description": "Fresh meat, poultry and fish products",
+      "icon": "🍗"
+    },
+    "bakery": {
+      "name": "Bakery",
+      "description": "Bread, challah, bagels and baked goods",
+      "icon": "🍞"
+    },
+    "produce": {
+      "name": "Fruit & Vegetables",
+      "description": "Fresh fruits and vegetables",
+      "icon": "🥕"
+    },
+    "pantry": {
+      "name": "Pantry",
+      "description": "Rice, pasta, oils and store cupboard essentials",
+      "icon": "🍚"
+    },
+    "beverages": {
+      "name": "Beverages",
+      "description": "Juices, soft drinks and beverages",
+      "icon": "🧃"
+    }
+  },
+  "aliases": {
+    "mlk": "milk",
+    "milk 2pt": "milk",
+    "challa": "challah",
+    "chalah": "challah",
+    "halla": "challah",
+    "chicken breast": "chicken_breast",
+    "chkn brst": "chicken_breast",
+    "grape juice": "grape_juice",
+    "grp juice": "grape_juice"
+  },
+  "receipts": [],
+  "priceHistory": [],
+  "lastUpdated": "2025-08-21T09:06:00.000Z",
+  "backupMetadata": {
+    "timestamp": "2025-08-21T14:23:58.089Z",
+    "reason": "startup",
+    "version": "1.0",
+    "originalFilename": "kosher-prices.json"
+  }
+}
