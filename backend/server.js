@@ -1,53 +1,56 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+// Initialize backup system
+const backupManager = require('./utils/backupManager');
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 
 // Import routes
-const receiptRoutes = require('./routes/receipts');
-const wholesaleRoutes = require('./routes/wholesale');
-const db = require('./database/kosher-db');
+const compareRoutes = require('./routes/compare');
 const manualEntryRoutes = require('./routes/manual-entry');
-
-app.use(cors());
-app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
+const receiptRoutes = require('./routes/receipts');
+const backupRoutes = require('./routes/backup');
 
 // Use routes
-app.use('/api/receipts', receiptRoutes);
-app.use('/api/wholesale', wholesaleRoutes);
+app.use('/api', compareRoutes);
 app.use('/api/manual', manualEntryRoutes);
+app.use('/api/receipts', receiptRoutes);
+app.use('/api/backup', backupRoutes);
 
-// Main grocery comparison endpoint using database
-app.post('/api/compare-groceries', (req, res) => {
-  const { groceryList } = req.body;
-  
-  // Use database for comparison
-  const comparison = db.compareShops(groceryList);
-  
-  // Format for frontend
-  const stores = Object.entries(comparison).map(([storeName, data], index) => ({
-    name: storeName,
-    logo: storeName === 'B Kosher' ? '🕍' : 
-          storeName === 'Tapuach' ? '🍎' :
-          storeName === 'Kosher Kingdom' ? '👑' : '🛒',
-    rating: 4.0 + Math.random() * 0.5,
-    totalPrice: data.total,
-    items: data.available,
-    missing: data.missing
-  }));
-  
-  // Sort by price
-  stores.sort((a, b) => a.totalPrice - b.totalPrice);
-  
-  res.json({
-    success: true,
-    totalItems: groceryList.length,
-    stores: stores
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: err.message 
   });
 });
 
-// Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  
+  // Initialize automatic backup system
+  console.log('🔄 Initializing backup system...');
+  backupManager.setupAutomaticBackups();
+  
+  // Create initial backup on startup
+  setTimeout(() => {
+    const initialBackup = backupManager.createBackup('startup');
+    if (initialBackup.success) {
+      console.log('📋 Initial backup created successfully');
+    }
+  }, 2000);
 });

@@ -1,179 +1,215 @@
 const fs = require('fs');
 const path = require('path');
 
-class KosherPriceDB {
-  constructor() {
-    this.dbPath = path.join(__dirname, 'kosher-prices.json');
-    this.loadDatabase();
-  }
-  
-  loadDatabase() {
-    try {
-      const data = fs.readFileSync(this.dbPath, 'utf8');
-      this.db = JSON.parse(data);
-    } catch (error) {
-      // Initialize with kosher stores
-      this.db = {
-        stores: {
-          'B Kosher': { 
-            location: 'Address here', 
-            phone: '',
-            hours: 'Sun-Thu: 9-7, Fri: 9-2' 
-          },
-          'Tapuach': { 
-            location: 'Address here', 
-            phone: '',
-            hours: 'Sun-Thu: 8-8, Fri: 8-3'
-          },
-          'Kosher Kingdom': { 
-            location: 'Address here', 
-            phone: '',
-            hours: 'Sun-Thu: 9-7, Fri: 9-2'
-          },
-          'Kays': { 
-            location: 'Address here', 
-            phone: '',
-            hours: 'Sun-Thu: 9-6, Fri: 9-1'
-          }
-        },
-        products: {},
-        receipts: [],
-        priceHistory: [],
-        lastUpdated: new Date()
-      };
-      this.saveDatabase();
-    }
-  }
-  
-  saveDatabase() {
-    fs.writeFileSync(this.dbPath, JSON.stringify(this.db, null, 2));
-  }
-  
-  // Add a single price
-  addPrice(store, productName, price, unit = 'each', category = 'General', brand = null) {
-    const key = productName.toLowerCase().trim();
-    
-    if (!this.db.products[key]) {
-      this.db.products[key] = {
-        displayName: productName,
-        category: category,
-        brand: brand,
-        prices: {},
-        priceHistory: []
-      };
-    }
-    
-    // Save old price to history if it exists and changed
-    if (this.db.products[key].prices[store]) {
-      const oldPrice = this.db.products[key].prices[store].price;
-      if (oldPrice !== price) {
-        this.db.products[key].priceHistory.push({
-          store: store,
-          oldPrice: oldPrice,
-          newPrice: price,
-          date: new Date()
-        });
-      }
-    }
-    
-    this.db.products[key].prices[store] = {
-      price: parseFloat(price),
-      unit: unit,
-      lastUpdated: new Date(),
-      source: 'manual'
-    };
-    
-    this.db.lastUpdated = new Date();
-    this.saveDatabase();
-    return true;
-  }
-  
-  // Add prices from a receipt
-  addReceipt(store, items, total, date = new Date()) {
-    const receipt = {
-      id: Date.now(),
-      store: store,
-      items: items,
-      total: total,
-      date: date,
-      uploadedAt: new Date()
-    };
-    
-    this.db.receipts.push(receipt);
-    
-    // Update individual prices
-    items.forEach(item => {
-      if (item.name && item.price) {
-        this.addPrice(store, item.name, item.price, item.unit || 'each', item.category || 'General');
-      }
-    });
-    
-    this.saveDatabase();
-    return receipt;
-  }
-  
-  // Get prices for shopping list comparison
-  compareShops(shoppingList) {
-    const comparison = {};
-    
-    ['B Kosher', 'Tapuach', 'Kosher Kingdom', 'Kays'].forEach(store => {
-      comparison[store] = {
-        available: [],
-        missing: [],
-        total: 0
-      };
-      
-      shoppingList.forEach(requestedItem => {
-        const itemKey = requestedItem.toLowerCase().trim();
-        const product = this.db.products[itemKey];
-        
-        if (product && product.prices[store]) {
-          comparison[store].available.push({
-            name: product.displayName,
-            price: product.prices[store].price,
-            unit: product.prices[store].unit
-          });
-          comparison[store].total += product.prices[store].price;
-        } else {
-          comparison[store].missing.push(requestedItem);
-        }
-      });
-      
-      comparison[store].total = parseFloat(comparison[store].total.toFixed(2));
-    });
-    
-    return comparison;
-  }
-  
-  // Get all prices for a specific store
-  getStorePrices(storeName) {
-    const prices = [];
-    
-    Object.entries(this.db.products).forEach(([key, product]) => {
-      if (product.prices[storeName]) {
-        prices.push({
-          name: product.displayName,
-          price: product.prices[storeName].price,
-          unit: product.prices[storeName].unit,
-          category: product.category,
-          lastUpdated: product.prices[storeName].lastUpdated
-        });
-      }
-    });
-    
-    return prices.sort((a, b) => a.name.localeCompare(b.name));
-  }
-  
-  // Quick bulk add for manual entry
-  bulkAddPrices(store, priceList) {
-    let added = 0;
-    priceList.forEach(item => {
-      if (this.addPrice(store, item.name, item.price, item.unit, item.category, item.brand)) {
-        added++;
-      }
-    });
-    return added;
-  }
-}
+const DB_FILE = path.join(__dirname, 'kosher-prices.json');
 
-module.exports = new KosherPriceDB();
+// Initialize with sample data if file doesn't exist
+const initializeDB = () => {
+  const initialData = {
+    stores: {
+      'B Kosher': {
+        location: 'Hendon Brent Stree',
+        phone: '020 3210 4000',
+        hours: 'Sun: 8am-10pm, Mon-Wed: 730am-10pm, Thu: 7am-11pm, Fri: 7am-3pm',
+        rating: 4.2
+      },
+      'Tapuach': {
+        location: 'Hendon',
+        phone: '020 8202 5700',
+        hours: 'Sun: 8am-10pm, Mon-Wed: 7am-11pm, Thu: 7am-12am, Fri: 8am-530pm',
+        rating: 4.0
+      },
+      'Kosher Kingdom': {
+        location: 'Golders Green',
+        phone: '020 8455 1429',
+        hours: 'Sun-Tue: 7am-10pm, Wed-Thu: 7am-12am, Fri: 7am-6.30pm',
+        rating: 4.5
+      },
+      'Kays': {
+        location: 'Hendon',
+        phone: '020 8202 9999',
+        hours: 'Sun-Thu: 8am-9pm, Fri: 8am-2pm',
+        rating: 3.8
+      }
+    },
+    products: {
+      // Sample products - will be populated via admin panel
+      'milk': {
+        displayName: 'Milk (2 pint)',
+        category: 'dairy',
+        synonyms: ['fresh milk', '2 pint milk', 'whole milk', 'semi skimmed milk'],
+        commonBrands: ['Golden Flow', 'Chalav'],
+        prices: {}
+      },
+      'challah': {
+        displayName: 'Challah',
+        category: 'bakery',
+        synonyms: ['challa', 'challah bread', 'shabbat bread', 'plaited bread'],
+        commonBrands: ['Jerusalem Bakery', 'Grodzinski'],
+        prices: {}
+      },
+      'chicken': {
+        displayName: 'Chicken (whole)',
+        category: 'meat',
+        synonyms: ['whole chicken', 'roasting chicken', 'fresh chicken'],
+        commonBrands: ['Tesco', 'Asda', 'Empire Kosher'],
+        prices: {}
+      },
+      'eggs': {
+        displayName: 'Eggs (dozen)',
+        category: 'dairy',
+        synonyms: ['dozen eggs', 'large eggs', 'medium eggs', 'free range eggs'],
+        commonBrands: ['Happy Egg Co', 'Clarence Court'],
+        prices: {}
+      },
+      'chicken_breast': {
+        displayName: 'Chicken Breast',
+        category: 'meat',
+        synonyms: ['chicken breasts', 'boneless chicken', 'chicken fillet'],
+        commonBrands: ['Tesco', 'Empire Kosher'],
+        prices: {}
+      },
+      'butter': {
+        displayName: 'Butter',
+        category: 'dairy',
+        synonyms: ['unsalted butter', 'salted butter', 'block butter'],
+        commonBrands: ['Anchor', 'Lurpak', 'Kerrygold'],
+        prices: {}
+      },
+      'grape_juice': {
+        displayName: 'Grape Juice',
+        category: 'beverages',
+        synonyms: ['red grape juice', 'white grape juice', 'kosher grape juice'],
+        commonBrands: ['Kedem', 'Bartenura'],
+        prices: {}
+      }
+    },
+    categories: {
+      dairy: {
+        name: 'Dairy & Eggs',
+        description: 'Milk, cheese, butter, eggs and dairy products',
+        icon: '🥛'
+      },
+      meat: {
+        name: 'Meat & Fish',
+        description: 'Fresh meat, poultry and fish products',
+        icon: '🍗'
+      },
+      bakery: {
+        name: 'Bakery',
+        description: 'Bread, challah, bagels and baked goods',
+        icon: '🍞'
+      },
+      produce: {
+        name: 'Fruit & Vegetables',
+        description: 'Fresh fruits and vegetables',
+        icon: '🥕'
+      },
+      pantry: {
+        name: 'Pantry',
+        description: 'Rice, pasta, oils and store cupboard essentials',
+        icon: '🍚'
+      },
+      beverages: {
+        name: 'Beverages',
+        description: 'Juices, soft drinks and beverages',
+        icon: '🧃'
+      }
+    },
+    aliases: {
+      // Legacy aliases - enhanced matching now handles most variations
+      'mlk': 'milk',
+      'milk 2pt': 'milk',
+      'challa': 'challah',
+      'chalah': 'challah',
+      'halla': 'challah',
+      'chicken breast': 'chicken_breast',
+      'chkn brst': 'chicken_breast',
+      'grape juice': 'grape_juice',
+      'grp juice': 'grape_juice'
+    }
+  };
+
+  if (!fs.existsSync(DB_FILE)) {
+    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2));
+    console.log('Database initialized with sample data');
+  }
+};
+
+// Read database
+const readDB = () => {
+  try {
+    initializeDB();
+    const data = fs.readFileSync(DB_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading database:', error);
+    initializeDB();
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  }
+};
+
+// Write to database
+const writeDB = (data) => {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error writing to database:', error);
+    return false;
+  }
+};
+
+// Add or update product prices
+const updateProductPrice = (productName, store, price, unit) => {
+  const db = readDB();
+  
+  // Normalize product name
+  const normalizedName = productName.toLowerCase().replace(/\s+/g, '_');
+  
+  // Create product if it doesn't exist
+  if (!db.products[normalizedName]) {
+    db.products[normalizedName] = {
+      displayName: productName,
+      category: 'uncategorized',
+      prices: {}
+    };
+  }
+  
+  // Update price
+  db.products[normalizedName].prices[store] = {
+    price: parseFloat(price),
+    unit: unit,
+    lastUpdated: new Date().toISOString()
+  };
+  
+  return writeDB(db);
+};
+
+// Get all products and prices
+const getAllProducts = () => {
+  const db = readDB();
+  return db.products;
+};
+
+// Get store information
+const getStores = () => {
+  const db = readDB();
+  return db.stores;
+};
+
+// Add alias for fuzzy matching
+const addAlias = (alias, productName) => {
+  const db = readDB();
+  db.aliases[alias.toLowerCase()] = productName.toLowerCase();
+  return writeDB(db);
+};
+
+module.exports = {
+  readDB,
+  writeDB,
+  updateProductPrice,
+  getAllProducts,
+  getStores,
+  addAlias
+};

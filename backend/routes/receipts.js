@@ -1,61 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const fetch = require('node-fetch');
+const multer = require('multer');
 
-// Store extracted prices (use database later)
-let priceDatabase = {};
+// Configure multer for file uploads
+const upload = multer({ 
+  dest: 'uploads/',
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
-router.post('/upload', async (req, res) => {
+// Receipt upload endpoint
+router.post('/upload', upload.single('receipt'), async (req, res) => {
   try {
-    const { image, userStore, userDate } = req.body;
-    
-    // Call Taggun API
-    const taggunResponse = await 
-fetch('https://api.taggun.io/v1/receipt/v1/simple', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'e3f1c6c4ac914f68ac232f6e4c76b35c',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        base64Image: image,
-        refresh: false,
-        incognito: false
-      })
-    });
-    
-    const receiptData = await taggunResponse.json();
-    
-    // Extract store name and items
-    const store = receiptData.merchantName || userStore;
-    const items = receiptData.lineItems || [];
-    
-    // Process each item
-    items.forEach(item => {
-      const productName = item.description;
-      const price = item.amount;
-      
-      if (!priceDatabase[productName]) {
-        priceDatabase[productName] = {};
-      }
-      
-      priceDatabase[productName][store] = {
-        price: price,
-        date: new Date(),
-        source: 'receipt'
-      };
-    });
-    
+    // For MVP, return a message that this feature is coming soon
     res.json({
-      success: true,
-      store: store,
-      itemsExtracted: items.length,
-      data: items
+      success: false,
+      message: 'Receipt scanning coming soon! For now, use the admin panel to add prices manually.',
+      error: 'Feature not yet implemented'
     });
+    
+    // Clean up uploaded file if it exists
+    if (req.file) {
+      const fs = require('fs').promises;
+      await fs.unlink(req.file.path).catch(() => {});
+    }
     
   } catch (error) {
     console.error('Receipt processing error:', error);
-    res.status(500).json({ error: 'Failed to process receipt' });
+    res.status(500).json({
+      success: false,
+      error: 'Receipt processing not yet available'
+    });
   }
 });
 
