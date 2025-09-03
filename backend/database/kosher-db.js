@@ -186,6 +186,38 @@ const updateProductPrice = (productName, store, price, unit) => {
   return writeDB(db);
 };
 
+// Update product info (display name, category)
+const updateProductInfo = (productKey, updates) => {
+  try {
+    const db = readDB();
+    
+    if (!db.products[productKey]) {
+      console.warn(`Product ${productKey} not found`);
+      return false;
+    }
+    
+    // Update display name if provided
+    if (updates.displayName) {
+      db.products[productKey].displayName = updates.displayName;
+    }
+    
+    // Update category if provided
+    if (updates.category) {
+      db.products[productKey].category = updates.category;
+    }
+    
+    // Save changes
+    const success = writeDB(db);
+    if (success) {
+      console.log(`✅ Updated product info: ${productKey}`);
+    }
+    return success;
+  } catch (error) {
+    console.error('Error updating product info:', error);
+    return false;
+  }
+};
+
 // Get all products and prices
 const getAllProducts = () => {
   const db = readDB();
@@ -196,6 +228,38 @@ const getAllProducts = () => {
 const getStores = () => {
   const db = readDB();
   return db.stores;
+};
+
+// Delete product
+const deleteProduct = (productKey) => {
+  try {
+    const db = readDB();
+    
+    if (!db.products[productKey]) {
+      console.warn(`Product ${productKey} not found`);
+      return false;
+    }
+    
+    // Remove from products
+    delete db.products[productKey];
+    
+    // Remove from aliases if any point to this product
+    Object.keys(db.aliases).forEach(alias => {
+      if (db.aliases[alias] === productKey) {
+        delete db.aliases[alias];
+      }
+    });
+    
+    // Save changes
+    const success = writeDB(db);
+    if (success) {
+      console.log(`✅ Deleted product: ${productKey}`);
+    }
+    return success;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return false;
+  }
 };
 
 // Add alias for fuzzy matching
@@ -209,7 +273,9 @@ module.exports = {
   readDB,
   writeDB,
   updateProductPrice,
+  updateProductInfo,
   getAllProducts,
   getStores,
+  deleteProduct,
   addAlias
 };

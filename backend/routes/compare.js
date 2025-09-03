@@ -254,4 +254,22 @@ router.get('/last-updated', (req, res) => {
   }
 });
 
+// Get all products (public endpoint for shopping list analyzer)
+router.get('/products', (req, res) => {
+  try {
+    const products = db.getAllProducts();
+    const stores = db.getStores();
+    
+    res.json({
+      success: true,
+      products,
+      stores,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch products' });
+  }
+});
+
 module.exports = router;

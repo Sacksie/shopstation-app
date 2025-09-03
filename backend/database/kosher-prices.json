@@ -214,6 +214,38 @@
           "lastUpdated": "2025-08-21T11:53:24.157Z"
         }
       }
+    },
+    "test_product": {
+      "displayName": "Test Product",
+      "category": "uncategorized",
+      "prices": {
+        "B Kosher": {
+          "price": 5.99,
+          "unit": "item",
+          "lastUpdated": "2025-08-22T15:58:50.662Z"
+        },
+        "Tapuach": {
+          "price": 6.49,
+          "unit": "item",
+          "lastUpdated": "2025-08-24T13:14:20.487Z"
+        },
+        "Kays": {
+          "price": 5.75,
+          "unit": "item",
+          "lastUpdated": "2025-08-24T13:14:20.488Z"
+        }
+      }
+    },
+    "test_product_2": {
+      "displayName": "Test Product 2",
+      "category": "uncategorized",
+      "prices": {
+        "Tapuach": {
+          "price": 7.99,
+          "unit": "item",
+          "lastUpdated": "2025-08-24T13:14:05.382Z"
+        }
+      }
     }
   },
   "categories": {

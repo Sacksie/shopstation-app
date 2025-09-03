@@ -19,7 +19,7 @@ const adminAuth = (req, res, next) => {
   }
   
   // Remove password from body if present
-  if (req.body.password) {
+  if (req.body && req.body.password) {
     delete req.body.password;
   }
   

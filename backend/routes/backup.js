@@ -124,6 +124,43 @@ router.post('/restore/:filename', (req, res) => {
   }
 });
 
+// Restore latest backup
+router.post('/restore-latest', (req, res) => {
+  try {
+    const backups = backupManager.getBackupList();
+    
+    if (backups.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No backups available to restore'
+      });
+    }
+    
+    const latestBackup = backups[0]; // Already sorted by newest first
+    const result = backupManager.restoreFromBackup(latestBackup.filename);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Latest backup restored: ${latestBackup.filename}`,
+        restoredBackup: latestBackup.filename,
+        safetyBackup: result.safetyBackup
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error restoring latest backup:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Upload and restore backup
 router.post('/upload-restore', upload.single('backupFile'), (req, res) => {
   try {

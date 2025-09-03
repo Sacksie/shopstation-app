@@ -29,6 +29,8 @@ frontend/build/
 # Backup files
 *.backup
 *.tar.gz
+backend/backups/
+**/backups/*.json
 
 # API Keys file
 IMPORTANT-KEYS.txt

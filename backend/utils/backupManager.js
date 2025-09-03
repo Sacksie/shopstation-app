@@ -172,22 +172,34 @@ const autoBackupBeforeBulk = (operationName) => {
   return createBackup(`bulk-${operationName}`);
 };
 
-// Setup automatic midnight backups
+// Setup automatic backups
 const setupAutomaticBackups = () => {
-  // Run every day at midnight (00:00)
-  const cronJob = cron.schedule('0 0 * * *', () => {
-    console.log('🕛 Running automatic midnight backup...');
-    createBackup('auto');
+  // Run every 4 hours (0, 4, 8, 12, 16, 20)
+  const cronJob4Hours = cron.schedule('0 */4 * * *', () => {
+    console.log('🔄 Running automatic 4-hour backup...');
+    createBackup('auto-4hr');
   }, {
     scheduled: false,
     timezone: "Europe/London" // UK timezone
   });
   
-  // Start the cron job
-  cronJob.start();
-  console.log('⏰ Automatic midnight backups enabled (00:00 UK time)');
+  // Also keep the daily midnight backup for long-term retention
+  const cronJobDaily = cron.schedule('0 0 * * *', () => {
+    console.log('🕛 Running automatic daily backup...');
+    createBackup('auto-daily');
+  }, {
+    scheduled: false,
+    timezone: "Europe/London" // UK timezone
+  });
   
-  return cronJob;
+  // Start both cron jobs
+  cronJob4Hours.start();
+  cronJobDaily.start();
+  console.log('⏰ Automatic backups enabled:');
+  console.log('   - Every 4 hours (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)');
+  console.log('   - Daily at midnight (00:00 UK time)');
+  
+  return { fourHourly: cronJob4Hours, daily: cronJobDaily };
 };
 
 // Manual backup for admin use
