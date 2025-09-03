@@ -29,7 +29,12 @@ app.use('/api/gdpr', gdprRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    deployment: 'Auto-Deploy from GitHub'
+  });
 });
 
 // Error handling middleware
