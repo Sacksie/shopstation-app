@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database/kosher-db');
+const dbOps = require('../database/db-operations');
 const { matchGroceryList, recordUserFeedback } = require('../utils/enhancedFuzzyMatch');
 const analytics = require('../utils/analytics');
 
@@ -17,22 +17,56 @@ router.post('/compare-groceries', async (req, res) => {
       });
     }
 
-    // Get all products and stores
-    const products = db.getAllProducts();
-    const stores = db.getStores();
+    // Validate and sanitize each grocery item
+    if (groceryList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Grocery list cannot be empty'
+      });
+    }
+
+    if (groceryList.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Grocery list cannot exceed 100 items'
+      });
+    }
+
+    // Sanitize and validate each item
+    const sanitizedList = groceryList
+      .filter(item => item !== null && item !== undefined)
+      .map(item => {
+        if (typeof item === 'string') {
+          // Trim whitespace and limit length
+          return item.trim().substring(0, 200);
+        }
+        return String(item).trim().substring(0, 200);
+      })
+      .filter(item => item.length > 0); // Remove empty items
+
+    if (sanitizedList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid items found in grocery list'
+      });
+    }
+
+    // Get all products and stores from the new database layer
+    const stores = await dbOps.getStores();
+    const products = await dbOps.getProducts();
     
-    console.log('Products in database:', Object.keys(products).length);
-    console.log('Stores:', Object.keys(stores));
+    console.log('Products in database:', products.length);
+    console.log('Stores:', stores.length);
     
     // If no products in database, return a helpful message
-    if (Object.keys(products).length === 0) {
+    if (products.length === 0) {
       // Still log the search attempt for analytics
       try {
         analytics.logSearch({
-          items: groceryList,
+          items: sanitizedList,
           matchedItems: 0,
-          unmatchedItems: groceryList,
-          storesCompared: Object.keys(stores).length,
+          unmatchedItems: sanitizedList,
+          storesCompared: stores.length,
           savings: 0,
           cheapestStore: null,
           mostExpensiveStore: null
@@ -43,69 +77,87 @@ router.post('/compare-groceries', async (req, res) => {
       
       return res.json({
         success: true,
-        stores: Object.keys(stores).map(storeName => ({
-          name: storeName,
-          ...stores[storeName],
+        stores: stores.map(store => ({
+          name: store.name,
+          location: store.location,
+          phone: store.phone,
+          hours: store.hours,
+          rating: store.rating,
           totalPrice: 0,
           items: [],
-          missingItems: groceryList,
+          missingItems: sanitizedList,
           availability: 0
         })),
-        totalItems: groceryList.length,
+        totalItems: sanitizedList.length,
         matchedItems: 0,
-        unmatchedItems: groceryList,
+        unmatchedItems: sanitizedList,
         message: 'No prices in database yet. Please add prices via admin panel.',
         timestamp: new Date().toISOString()
       });
     }
     
-    // Match items using enhanced fuzzy matching
-    const matchResults = matchGroceryList(groceryList);
+    // Enhanced search for each grocery item
+    const searchResults = [];
+    const unmatchedItems = [];
+
+    for (const item of sanitizedList) {
+      const matches = await dbOps.searchProducts(item);
+      if (matches.length > 0) {
+        // Take the best match for now
+        searchResults.push({
+          original: item,
+          matched: matches[0]
+        });
+      } else {
+        unmatchedItems.push(item);
+      }
+    }
     
-    console.log('Enhanced match results:', {
-      matched: matchResults.matched.length,
-      unmatched: matchResults.unmatched.length,
-      methods: matchResults.matched.reduce((acc, m) => {
-        acc[m.method] = (acc[m.method] || 0) + 1;
-        return acc;
-      }, {})
+    console.log('Search results:', {
+      matched: searchResults.length,
+      unmatched: unmatchedItems.length
     });
-    
-    console.log('Match results:', matchResults);
     
     // Calculate prices for each store
     const storeResults = [];
     
-    for (const [storeName, storeInfo] of Object.entries(stores)) {
+    for (const store of stores) {
       let totalPrice = 0;
       const items = [];
       const missingItems = [];
       
-      for (const matchedItem of matchResults.matched) {
-        const product = products[matchedItem.matched];
+      for (const searchResult of searchResults) {
+        const product = searchResult.matched;
         
-        if (product && product.prices && product.prices[storeName]) {
-          const priceInfo = product.prices[storeName];
+        // Find price for this store
+        const storePricing = product.prices?.find(p => 
+          p.store_name === store.name && p.in_stock !== false
+        );
+        
+        if (storePricing) {
           items.push({
-            name: matchedItem.original,
-            matchedName: product.displayName,
-            price: priceInfo.price,
-            unit: priceInfo.unit
+            name: searchResult.original,
+            matchedName: product.name,
+            price: storePricing.price,
+            unit: storePricing.unit
           });
-          totalPrice += priceInfo.price;
+          totalPrice += storePricing.price;
         } else {
-          missingItems.push(matchedItem.original);
+          missingItems.push(searchResult.original);
         }
       }
       
       // Add unmatched items to missing items
-      matchResults.unmatched.forEach(item => {
+      unmatchedItems.forEach(item => {
         missingItems.push(item);
       });
       
       storeResults.push({
-        name: storeName,
-        ...storeInfo,
+        name: store.name,
+        location: store.location,
+        phone: store.phone,
+        hours: store.hours,
+        rating: store.rating,
         totalPrice: totalPrice,
         items: items,
         missingItems: missingItems,
@@ -143,8 +195,8 @@ router.post('/compare-groceries', async (req, res) => {
     try {
       analytics.logSearch({
         items: groceryList,
-        matchedItems: matchResults.matched.length,
-        unmatchedItems: matchResults.unmatched,
+        matchedItems: searchResults.length,
+        unmatchedItems: unmatchedItems,
         storesCompared: storeResults.length,
         savings,
         cheapestStore,
@@ -158,8 +210,8 @@ router.post('/compare-groceries', async (req, res) => {
       success: true,
       stores: storeResults,
       totalItems: groceryList.length,
-      matchedItems: matchResults.matched.length,
-      unmatchedItems: matchResults.unmatched,
+      matchedItems: searchResults.length,
+      unmatchedItems: unmatchedItems,
       timestamp: new Date().toISOString()
     });
     
@@ -168,6 +220,44 @@ router.post('/compare-groceries', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to compare groceries'
+    });
+  }
+});
+
+// New endpoint for product requests
+router.post('/request-product', async (req, res) => {
+  try {
+    const { productName, userName, userEmail, categorySuggestion, description } = req.body;
+    
+    if (!productName || productName.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product name is required'
+      });
+    }
+
+    const result = await dbOps.addProductRequest({
+      productName: productName.trim(),
+      userName: userName?.trim() || null,
+      userEmail: userEmail?.trim() || null,
+      categorySuggestion: categorySuggestion?.trim() || null,
+      description: description?.trim() || null
+    });
+
+    console.log(`📝 New product request: "${productName}" from ${userName || userEmail || 'anonymous user'}`);
+
+    res.json({
+      success: true,
+      message: 'Product request submitted successfully! We\'ll add it soon.',
+      requestId: result.requestId,
+      timestamp: result.createdAt || new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error submitting product request:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to submit product request. Please try again.'
     });
   }
 });
@@ -225,17 +315,17 @@ router.post('/feedback-match', (req, res) => {
 });
 
 // Get last updated timestamp for main page
-router.get('/last-updated', (req, res) => {
+router.get('/last-updated', async (req, res) => {
   try {
-    const products = db.getAllProducts();
+    const products = await dbOps.getProducts();
     let lastUpdated = null;
     
     // Find the most recent price update
-    Object.values(products).forEach(product => {
+    products.forEach(product => {
       if (product.prices) {
-        Object.values(product.prices).forEach(priceInfo => {
-          if (priceInfo.lastUpdated) {
-            const updated = new Date(priceInfo.lastUpdated);
+        product.prices.forEach(priceInfo => {
+          if (priceInfo.last_updated) {
+            const updated = new Date(priceInfo.last_updated);
             if (!lastUpdated || updated > lastUpdated) {
               lastUpdated = updated;
             }
@@ -246,7 +336,8 @@ router.get('/last-updated', (req, res) => {
     
     res.json({ 
       success: true, 
-      lastUpdated: lastUpdated ? lastUpdated.toISOString() : null 
+      lastUpdated: lastUpdated ? lastUpdated.toISOString() : null,
+      databaseType: dbOps.getDatabaseType()
     });
   } catch (error) {
     console.error('Error getting last updated:', error);
@@ -255,15 +346,16 @@ router.get('/last-updated', (req, res) => {
 });
 
 // Get all products (public endpoint for shopping list analyzer)
-router.get('/products', (req, res) => {
+router.get('/products', async (req, res) => {
   try {
-    const products = db.getAllProducts();
-    const stores = db.getStores();
+    const products = await dbOps.getProducts();
+    const stores = await dbOps.getStores();
     
     res.json({
       success: true,
       products,
       stores,
+      databaseType: dbOps.getDatabaseType(),
       timestamp: new Date().toISOString()
     });
   } catch (error) {

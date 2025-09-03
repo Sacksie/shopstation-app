@@ -70,6 +70,35 @@
       "cheapestStore": "Kays",
       "mostExpensiveStore": "Kosher Kingdom",
       "day": "2025-08-21"
+    },
+    {
+      "timestamp": "2025-09-03T18:15:23.670Z",
+      "userId": "user_3b62785",
+      "items": [
+        "milk",
+        "bread"
+      ],
+      "matchedItems": 2,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 4.1,
+      "cheapestStore": "Kosher Kingdom",
+      "mostExpensiveStore": "Tapuach",
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T21:28:34.199Z",
+      "userId": "user_4989cbeb",
+      "items": [
+        "Challah"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0.5,
+      "cheapestStore": "Kays",
+      "mostExpensiveStore": "Tapuach",
+      "day": "2025-09-03"
     }
   ],
   "shopSelections": [
@@ -94,6 +123,10 @@
       "user_7309e743",
       "user_5fa9c0fe",
       "user_5ab925bd"
+    ],
+    "2025-09-03": [
+      "user_3b62785",
+      "user_4989cbeb"
     ]
   }
 }

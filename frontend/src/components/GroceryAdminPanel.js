@@ -89,7 +89,7 @@ const GroceryAdminPanel = () => {
       setAuthError('');
       
       // For development, allow test password
-      if (adminPassword === 'test123' || adminPassword === 'Gavtalej22') {
+      if (adminPassword === 'test123' || adminPassword === 'temp-password-123') {
         setIsAuthenticated(true);
         return;
       }
@@ -492,7 +492,7 @@ const QuickEntryDashboard = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': 'Gavtalej22'
+          'x-admin-password': 'temp-password-123'
         },
         body: JSON.stringify({
           store: entry.store,
@@ -909,7 +909,7 @@ Eggs Dozen,Tapuach,3.00,dozen,In Stock,No`;
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': 'Gavtalej22'
+            'x-admin-password': 'temp-password-123'
           },
           body: JSON.stringify({
             store: row['Store'],
@@ -1256,6 +1256,18 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
   const [selectedStore, setSelectedStore] = useState(storeFilter);
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
+  
+  // Bulk operations state
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [bulkAction, setBulkAction] = useState('');
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  
+  // Enhanced filtering state
+  const [minCoverage, setMinCoverage] = useState(0);
+  const [maxCoverage, setMaxCoverage] = useState(4);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [lastBackup, setLastBackup] = useState(null);
 
   // Load products on mount and when store filter changes
@@ -1365,9 +1377,30 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
 
     try {
       if (field === 'price') {
+        // Enhanced price validation
+        if (!editValue || editValue.trim() === '') {
+          alert('Price cannot be empty');
+          return;
+        }
+        
         const newPrice = parseFloat(editValue);
-        if (isNaN(newPrice) || newPrice <= 0) {
-          alert('Please enter a valid price');
+        if (isNaN(newPrice)) {
+          alert('Price must be a valid number (e.g., 2.50)');
+          return;
+        }
+        
+        if (newPrice <= 0) {
+          alert('Price must be greater than £0');
+          return;
+        }
+        
+        if (newPrice > 9999.99) {
+          alert('Price cannot exceed £9,999.99');
+          return;
+        }
+        
+        if (!/^\d+\.?\d{0,2}$/.test(editValue.trim())) {
+          alert('Price should have at most 2 decimal places (e.g., 2.50)');
           return;
         }
 
@@ -1376,7 +1409,7 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': 'Gavtalej22'
+            'x-admin-password': 'temp-password-123'
           },
           body: JSON.stringify({
             store: storeName,
@@ -1407,28 +1440,95 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
           return p;
         }));
       } else if (field === 'name') {
-        if (!editValue.trim()) {
+        // Enhanced product name validation
+        if (!editValue || editValue.trim() === '') {
           alert('Product name cannot be empty');
           return;
+        }
+        
+        const trimmedName = editValue.trim();
+        if (trimmedName.length < 2) {
+          alert('Product name must be at least 2 characters long');
+          return;
+        }
+        
+        if (trimmedName.length > 100) {
+          alert('Product name cannot exceed 100 characters');
+          return;
+        }
+        
+        if (!/^[a-zA-Z0-9\s\-\.\(\)&']+$/.test(trimmedName)) {
+          alert('Product name contains invalid characters. Use only letters, numbers, spaces, and common symbols (- . ( ) & \')');
+          return;
+        }
+        
+        // Check for duplicate names
+        const duplicateExists = products.some(p => p.id !== productId && p.name.toLowerCase() === trimmedName.toLowerCase());
+        if (duplicateExists) {
+          alert(`A product with the name "${trimmedName}" already exists. Please use a different name.`);
+          return;
+        }
+        
+        // Update product name via backend API
+        const response = await fetch(`${API_URL}/api/manual/update-product-info`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-password': 'temp-password-123'
+          },
+          body: JSON.stringify({
+            productKey: productId,
+            displayName: trimmedName
+          })
+        });
+        
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update product name');
         }
         
         // Update local state for product name
         setProducts(prev => prev.map(p => {
           if (p.id === productId) {
-            return { ...p, name: editValue.trim() };
+            return { ...p, name: trimmedName };
           }
           return p;
         }));
       } else if (field === 'category') {
-        if (!editValue.trim()) {
+        // Enhanced category validation
+        if (!editValue || editValue.trim() === '') {
           alert('Category cannot be empty');
           return;
+        }
+        
+        const trimmedCategory = editValue.trim().toLowerCase();
+        if (!CATEGORIES.includes(trimmedCategory)) {
+          alert(`Invalid category. Please select from: ${CATEGORIES.join(', ')}`);
+          return;
+        }
+        
+        // Update product category via backend API
+        const response = await fetch(`${API_URL}/api/manual/update-product-info`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-password': 'temp-password-123'
+          },
+          body: JSON.stringify({
+            productKey: productId,
+            category: trimmedCategory
+          })
+        });
+        
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update product category');
         }
         
         // Update local state for category
         setProducts(prev => prev.map(p => {
           if (p.id === productId) {
-            return { ...p, category: editValue.trim().toLowerCase() };
+            return { ...p, category: trimmedCategory };
           }
           return p;
         }));
@@ -1469,13 +1569,204 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
     setEditValue('');
   };
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesStore = selectedStore === 'all' || product.prices[selectedStore] !== null;
-    return matchesSearch && matchesCategory && matchesStore;
-  });
+  // Bulk operations handlers
+  const handleSelectProduct = (productId) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+      setShowBulkActions(true);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) return;
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedProducts.size} selected product(s)?\n\n` +
+      `This will permanently remove all selected products and their prices from all stores.\n\n` +
+      `This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const deletePromises = Array.from(selectedProducts).map(async (productId) => {
+        const response = await fetch(`${API_URL}/api/manual/delete-product/${productId}`, {
+          method: 'DELETE',
+          headers: { 'x-admin-password': 'temp-password-123' }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to delete ${productId}: ${errorData.error}`);
+        }
+        
+        return productId;
+      });
+      
+      const deletedIds = await Promise.all(deletePromises);
+      
+      // Update local state
+      setProducts(prev => prev.filter(p => !deletedIds.includes(p.id)));
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      
+      alert(`Successfully deleted ${deletedIds.length} product(s)!`);
+      
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      alert(`Bulk delete failed: ${error.message}`);
+    }
+  };
+
+  const handleBulkCategoryChange = async (newCategory) => {
+    if (selectedProducts.size === 0 || !newCategory) return;
+    
+    const confirmed = window.confirm(
+      `Change category to "${newCategory}" for ${selectedProducts.size} selected product(s)?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const updatePromises = Array.from(selectedProducts).map(async (productId) => {
+        const response = await fetch(`${API_URL}/api/manual/update-product-info`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-password': 'temp-password-123'
+          },
+          body: JSON.stringify({
+            productKey: productId,
+            category: newCategory
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to update ${productId}: ${errorData.error}`);
+        }
+        
+        return productId;
+      });
+      
+      const updatedIds = await Promise.all(updatePromises);
+      
+      // Update local state
+      setProducts(prev => prev.map(p => 
+        updatedIds.includes(p.id) 
+          ? { ...p, category: newCategory }
+          : p
+      ));
+      
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      setBulkAction('');
+      
+      alert(`Successfully updated category for ${updatedIds.length} product(s)!`);
+      
+    } catch (error) {
+      console.error('Bulk category change error:', error);
+      alert(`Bulk category change failed: ${error.message}`);
+    }
+  };
+
+  const handleDeleteProduct = async (productId, productName) => {
+    // Show confirmation dialog
+    if (!window.confirm(`Are you sure you want to delete "${productName}"?\n\nThis will permanently remove the product and all its prices from all stores.\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Call backend delete API
+      const response = await fetch(`${API_URL}/api/manual/delete-product/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-admin-password': 'temp-password-123'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Remove from local state
+          setProducts(prev => prev.filter(p => p.id !== productId));
+          alert(`Product "${productName}" deleted successfully!`);
+        } else {
+          alert(`Failed to delete product: ${data.error || 'Unknown error'}`);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete product: ${errorData.error || 'Server error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert(`Failed to delete product: ${error.message}`);
+    }
+  };
+
+  // Enhanced filter and sort products
+  const filteredProducts = products
+    .filter(product => {
+      // Basic filters
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          product.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+      const matchesStore = selectedStore === 'all' || product.prices[selectedStore] !== null;
+      
+      // Coverage filter
+      const coverage = product.pricesAvailable || 0;
+      const matchesCoverage = coverage >= minCoverage && coverage <= maxCoverage;
+      
+      return matchesSearch && matchesCategory && matchesStore && matchesCoverage;
+    })
+    .sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.category.toLowerCase();
+          bValue = b.category.toLowerCase();
+          break;
+        case 'coverage':
+          aValue = a.pricesAvailable || 0;
+          bValue = b.pricesAvailable || 0;
+          break;
+        case 'avgPrice':
+          // Calculate average price
+          const aPrices = Object.values(a.prices).filter(p => p !== null).map(p => p.price);
+          const bPrices = Object.values(b.prices).filter(p => p !== null).map(p => p.price);
+          aValue = aPrices.length > 0 ? aPrices.reduce((sum, p) => sum + p, 0) / aPrices.length : 0;
+          bValue = bPrices.length > 0 ? bPrices.reduce((sum, p) => sum + p, 0) / bPrices.length : 0;
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      } else {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
 
   const stores = getAllStores();
 
@@ -1507,46 +1798,177 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Enhanced Stats with Icons */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-blue-600">{products.length}</div>
-            <div className="text-sm text-gray-600">Total Products</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-green-600">{stores.length}</div>
-            <div className="text-sm text-gray-600">Active Stores</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-purple-600">
-              {products.reduce((sum, p) => sum + p.pricesAvailable, 0)}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-blue-600">{products.length}</div>
+                <div className="text-sm text-gray-600">Total Products</div>
+                <div className="text-xs text-gray-400">{filteredProducts.length} shown</div>
+              </div>
+              <div className="text-3xl">📦</div>
             </div>
-            <div className="text-sm text-gray-600">Price Points</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-orange-600">
-              {Math.round((products.reduce((sum, p) => sum + p.pricesAvailable, 0) / (products.length * stores.length)) * 100)}%
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-green-600">{stores.length}</div>
+                <div className="text-sm text-gray-600">Active Stores</div>
+                <div className="text-xs text-gray-400">{stores.map(s => s.name.split(' ')[0]).join(', ')}</div>
+              </div>
+              <div className="text-3xl">🏪</div>
             </div>
-            <div className="text-sm text-gray-600">Coverage</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {products.reduce((sum, p) => sum + p.pricesAvailable, 0)}
+                </div>
+                <div className="text-sm text-gray-600">Price Points</div>
+                <div className="text-xs text-gray-400">{(products.length * stores.length) - products.reduce((sum, p) => sum + p.pricesAvailable, 0)} missing</div>
+              </div>
+              <div className="text-3xl">💰</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {Math.round((products.reduce((sum, p) => sum + p.pricesAvailable, 0) / (products.length * stores.length)) * 100)}%
+                </div>
+                <div className="text-sm text-gray-600">Coverage</div>
+                <div className="text-xs text-gray-400">{products.filter(p => p.pricesAvailable === stores.length).length} complete</div>
+              </div>
+              <div className="text-3xl">📊</div>
+            </div>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Store Coverage Dashboard */}
         <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">📈 Store Coverage Dashboard</h3>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span className="flex items-center"><span className="w-3 h-3 bg-red-200 rounded mr-1"></span>0 stores</span>
+              <span className="flex items-center"><span className="w-3 h-3 bg-yellow-200 rounded mr-1"></span>1-2 stores</span>
+              <span className="flex items-center"><span className="w-3 h-3 bg-blue-200 rounded mr-1"></span>3 stores</span>
+              <span className="flex items-center"><span className="w-3 h-3 bg-green-200 rounded mr-1"></span>All stores</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Coverage Distribution */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search Products</label>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Coverage Distribution</h4>
+              <div className="space-y-2">
+                {[0, 1, 2, 3, 4].map(coverage => {
+                  const count = products.filter(p => (p.pricesAvailable || 0) === coverage).length;
+                  const percentage = products.length > 0 ? (count / products.length) * 100 : 0;
+                  const bgColor = coverage === 0 ? 'bg-red-200' : coverage <= 2 ? 'bg-yellow-200' : coverage === 3 ? 'bg-blue-200' : 'bg-green-200';
+                  
+                  return (
+                    <div key={coverage} className="flex items-center">
+                      <div className="w-20 text-sm text-gray-600">
+                        {coverage === 0 ? 'No prices' : coverage === 4 ? 'Complete' : `${coverage} store${coverage !== 1 ? 's' : ''}`}
+                      </div>
+                      <div className="flex-1 mx-3">
+                        <div className="w-full bg-gray-200 rounded-full h-4 relative">
+                          <div 
+                            className={`h-4 rounded-full ${bgColor}`}
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                            {count > 0 && `${count}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="w-12 text-sm text-gray-500 text-right">{percentage.toFixed(0)}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Store Performance */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Store Performance</h4>
+              <div className="space-y-2">
+                {stores.map(store => {
+                  const storeProducts = products.filter(p => p.prices[store.name] !== null).length;
+                  const percentage = products.length > 0 ? (storeProducts / products.length) * 100 : 0;
+                  
+                  return (
+                    <div key={store.id} className="flex items-center">
+                      <div className="w-20 text-sm text-gray-600 truncate" title={store.name}>
+                        {store.name.split(' ')[0]}
+                      </div>
+                      <div className="flex-1 mx-3">
+                        <div className="w-full bg-gray-200 rounded-full h-4 relative">
+                          <div 
+                            className="h-4 rounded-full bg-blue-500"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
+                            {storeProducts > 0 && `${storeProducts}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="w-12 text-sm text-gray-500 text-right">{percentage.toFixed(0)}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="mt-4 pt-3 border-t flex items-center justify-between">
+            <div className="flex items-center space-x-4 text-sm">
+              <span className="text-gray-600">📌 Quick Actions:</span>
+              <button 
+                onClick={() => {
+                  setMinCoverage(0);
+                  setMaxCoverage(0);
+                  setShowAdvancedFilters(true);
+                }}
+                className="text-red-600 hover:text-red-800"
+              >
+                Show incomplete
+              </button>
+              <button 
+                onClick={() => {
+                  setMinCoverage(4);
+                  setMaxCoverage(4);
+                  setShowAdvancedFilters(true);
+                }}
+                className="text-green-600 hover:text-green-800"
+              >
+                Show complete
+              </button>
+            </div>
+            <div className="text-sm text-gray-500">Target: 100% coverage</div>
+          </div>
+        </div>
+
+        {/* Enhanced Filters */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          {/* Primary Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Search</label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by product name..."
+                placeholder="Search by name or ID..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">📂 Category</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -1562,7 +1984,7 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Store</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">🏪 Store</label>
               <select
                 value={selectedStore}
                 onChange={(e) => setSelectedStore(e.target.value)}
@@ -1574,9 +1996,154 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">📊 Sort</label>
+              <div className="flex space-x-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="name">Name</option>
+                  <option value="category">Category</option>
+                  <option value="coverage">Coverage</option>
+                  <option value="avgPrice">Avg Price</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+                  title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+            </div>
           </div>
+
+          {/* Filter Status & Advanced Toggle */}
+          <div className="flex items-center justify-between border-t pt-3">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              <span>{showAdvancedFilters ? '🔼' : '🔽'}</span>
+              <span>Advanced Filters</span>
+              <span className="text-gray-400">({filteredProducts.length} results)</span>
+            </button>
+            
+            <div className="flex items-center space-x-2 text-sm">
+              {searchTerm && <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">"{searchTerm}"</span>}
+              {selectedCategory !== 'all' && <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{selectedCategory}</span>}
+              {selectedStore !== 'all' && <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">{selectedStore}</span>}
+            </div>
+          </div>
+
+          {/* Advanced Filters Panel */}
+          {showAdvancedFilters && (
+            <div className="border-t pt-4 mt-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📈 Store Coverage: {minCoverage} - {maxCoverage} stores
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs w-8">Min:</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        value={minCoverage}
+                        onChange={(e) => setMinCoverage(parseInt(e.target.value))}
+                        className="flex-1"
+                      />
+                      <span className="text-xs w-4">{minCoverage}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs w-8">Max:</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        value={maxCoverage}
+                        onChange={(e) => setMaxCoverage(parseInt(e.target.value))}
+                        className="flex-1"
+                      />
+                      <span className="text-xs w-4">{maxCoverage}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedCategory('all');
+                      setSelectedStore('all');
+                      setMinCoverage(0);
+                      setMaxCoverage(4);
+                      setSortBy('name');
+                      setSortOrder('asc');
+                    }}
+                    className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
+                  >
+                    🔄 Reset Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Bulk Actions Toolbar */}
+      {showBulkActions && (
+        <div className="bg-blue-600 text-white p-4 rounded-lg shadow-lg mb-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <span className="font-medium">
+              {selectedProducts.size} product{selectedProducts.size !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  setSelectedProducts(new Set());
+                  setShowBulkActions(false);
+                }}
+                className="bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <select
+              value={bulkAction}
+              onChange={(e) => {
+                const action = e.target.value;
+                setBulkAction(action);
+                if (action === 'delete') {
+                  handleBulkDelete();
+                } else if (action.startsWith('category-')) {
+                  const category = action.replace('category-', '');
+                  handleBulkCategoryChange(category);
+                }
+              }}
+              className="bg-white text-gray-900 border border-gray-300 rounded px-3 py-1 text-sm"
+            >
+              <option value="">Choose Action...</option>
+              <option value="delete">🗑️ Delete Selected</option>
+              <optgroup label="Change Category">
+                {CATEGORIES.map(category => (
+                  <option key={category} value={`category-${category}`}>
+                    📂 {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="flex-1 bg-white rounded-lg shadow overflow-hidden">
@@ -1584,6 +2151,14 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
           <table className="min-w-full h-full">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
+                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={filteredProducts.length > 0 && selectedProducts.size === filteredProducts.length}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
@@ -1598,6 +2173,9 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
                     {store.name}
                   </th>
                 ))}
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -1606,7 +2184,15 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
                 const isEditingCategory = editingCell === `${product.id}-category`;
                 
                 return (
-                <tr key={product.id} className="hover:bg-gray-50">
+                <tr key={product.id} className={`hover:bg-gray-50 ${selectedProducts.has(product.id) ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
+                  <td className="px-2 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={() => handleSelectProduct(product.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="px-4 py-4">
                     {isEditingName ? (
                       <div className="flex items-center space-x-2">
@@ -1775,6 +2361,15 @@ const ProductMasterPage = ({ storeFilter = 'all' }) => {
                       </td>
                     );
                   })}
+                  <td className="px-4 py-4 text-center">
+                    <button
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                      title="Delete Product"
+                    >
+                      🗑️
+                    </button>
+                  </td>
                 </tr>
                 );
               })}
@@ -1893,7 +2488,7 @@ const MobileEntryMode = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': 'Gavtalej22'
+          'x-admin-password': 'temp-password-123'
         },
         body: JSON.stringify({
           store: entry.store,
