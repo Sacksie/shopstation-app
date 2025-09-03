@@ -4,11 +4,13 @@
   "description": "ShopStation backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node scripts/check-railway-env.js && node server.js",
+    "start:unsafe": "node server.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "dev": "NODE_ENV=development node server.js"
+    "dev": "NODE_ENV=development node server.js",
+    "check-env": "node scripts/check-railway-env.js"
   },
   "engines": {
     "node": ">=16.0.0"
