@@ -53,10 +53,13 @@ class BusinessMonitoring {
     // Add to in-memory log
     this.errorLog.push(errorInfo);
     
-    // Keep only last 100 errors in memory
+    // Keep only last 100 errors in memory and clean up old entries
     if (this.errorLog.length > 100) {
       this.errorLog = this.errorLog.slice(-100);
     }
+
+    // Clean up old error logs from filesystem periodically
+    this.cleanupOldLogFiles();
 
     // Write to file for persistence
     this.writeErrorToFile(errorInfo);
@@ -87,10 +90,13 @@ class BusinessMonitoring {
 
     this.performanceLog.push(perfInfo);
     
-    // Keep only last 1000 performance entries
+    // Keep only last 1000 performance entries and clean up old entries
     if (this.performanceLog.length > 1000) {
       this.performanceLog = this.performanceLog.slice(-1000);
     }
+
+    // Clean up old performance logs from filesystem periodically
+    this.cleanupOldLogFiles();
 
     // Alert on slow operations
     if (duration > 5000) { // 5 seconds
@@ -269,6 +275,43 @@ class BusinessMonitoring {
         duration: entry.duration,
         timestamp: entry.timestamp
       }));
+  }
+
+  /**
+   * Clean up old log files to prevent disk space issues
+   * BUSINESS IMPACT: Prevents server crashes from disk space exhaustion
+   */
+  cleanupOldLogFiles() {
+    try {
+      // Only run cleanup every 100 operations to avoid performance impact
+      if (Math.random() > 0.01) {
+        return;
+      }
+
+      const files = fs.readdirSync(this.logsDir)
+        .filter(file => file.endsWith('.json'))
+        .map(file => ({
+          name: file,
+          path: path.join(this.logsDir, file),
+          stats: fs.statSync(path.join(this.logsDir, file))
+        }))
+        .sort((a, b) => b.stats.mtime - a.stats.mtime);
+
+      // Keep only last 30 log files
+      if (files.length > 30) {
+        const filesToDelete = files.slice(30);
+        filesToDelete.forEach(file => {
+          try {
+            fs.unlinkSync(file.path);
+            console.log(`🗑️ Cleaned up old log file: ${file.name}`);
+          } catch (unlinkError) {
+            console.warn(`⚠️ Failed to delete old log file ${file.name}:`, unlinkError.message);
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Log cleanup failed:', error.message);
+    }
   }
 }
 

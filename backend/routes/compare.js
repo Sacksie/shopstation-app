@@ -9,6 +9,8 @@ router.post('/compare-groceries', async (req, res) => {
     const { groceryList } = req.body;
     
     console.log('Received grocery list:', groceryList);
+    console.log('Request origin:', req.get('Origin'));
+    console.log('Request headers:', req.headers);
     
     if (!groceryList || !Array.isArray(groceryList)) {
       return res.status(400).json({
@@ -52,21 +54,33 @@ router.post('/compare-groceries', async (req, res) => {
     }
 
     // Get all products and stores from the new database layer
-    const stores = await dbOps.getStores();
-    const products = await dbOps.getProducts();
+    let stores, products;
     
-    console.log('Products in database:', products.length);
-    console.log('Stores:', stores.length);
+    try {
+      stores = await dbOps.getStores();
+      products = await dbOps.getProducts();
+      
+      console.log('Products in database:', products.length);
+      console.log('Stores:', stores.length);
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError);
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection failed',
+        message: 'Unable to retrieve store and product information. Please try again later.',
+        details: config.environment === 'development' ? dbError.message : undefined
+      });
+    }
     
     // If no products in database, return a helpful message
-    if (products.length === 0) {
+    if (!products || products.length === 0) {
       // Still log the search attempt for analytics
       try {
         analytics.logSearch({
           items: sanitizedList,
           matchedItems: 0,
           unmatchedItems: sanitizedList,
-          storesCompared: stores.length,
+          storesCompared: stores ? stores.length : 0,
           savings: 0,
           cheapestStore: null,
           mostExpensiveStore: null
@@ -77,8 +91,8 @@ router.post('/compare-groceries', async (req, res) => {
       
       return res.json({
         success: true,
-        stores: stores.map(store => ({
-          name: store.name,
+        stores: (stores || []).map(store => ({
+          name: store.name || store.slug,
           location: store.location,
           phone: store.phone,
           hours: store.hours,

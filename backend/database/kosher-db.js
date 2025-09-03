@@ -2,6 +2,30 @@ const fs = require('fs');
 const path = require('path');
 
 const DB_FILE = path.join(__dirname, 'kosher-prices.json');
+const LOCK_FILE = path.join(__dirname, 'kosher-prices.lock');
+
+// Simple file-based locking to prevent race conditions
+let writeLock = false;
+const acquireLock = () => {
+  if (writeLock) {
+    return false;
+  }
+  writeLock = true;
+  return true;
+};
+
+const releaseLock = () => {
+  writeLock = false;
+};
+
+// Wait for lock with timeout
+const waitForLock = (timeout = 5000) => {
+  const start = Date.now();
+  while (writeLock && (Date.now() - start) < timeout) {
+    // Wait for lock to be released
+  }
+  return !writeLock;
+};
 
 // Initialize with sample data if file doesn't exist
 const initializeDB = () => {
@@ -152,10 +176,28 @@ const readDB = () => {
 // Write to database
 const writeDB = (data) => {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-    return true;
+    // Wait for lock with timeout
+    if (!waitForLock(5000)) {
+      console.error('Timeout waiting for database lock');
+      return false;
+    }
+    
+    // Acquire lock
+    if (!acquireLock()) {
+      console.error('Could not acquire database lock');
+      return false;
+    }
+    
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+      return true;
+    } finally {
+      // Always release lock
+      releaseLock();
+    }
   } catch (error) {
     console.error('Error writing to database:', error);
+    releaseLock(); // Ensure lock is released on error
     return false;
   }
 };

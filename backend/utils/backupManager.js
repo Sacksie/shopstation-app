@@ -64,19 +64,33 @@ const cleanupOldBackups = () => {
   try {
     const files = fs.readdirSync(BACKUPS_DIR)
       .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
-      .map(file => ({
-        name: file,
-        path: path.join(BACKUPS_DIR, file),
-        stats: fs.statSync(path.join(BACKUPS_DIR, file))
-      }))
+      .map(file => {
+        try {
+          const filePath = path.join(BACKUPS_DIR, file);
+          const stats = fs.statSync(filePath);
+          return {
+            name: file,
+            path: filePath,
+            stats: stats
+          };
+        } catch (statError) {
+          console.warn(`⚠️ Could not stat backup file ${file}:`, statError.message);
+          return null;
+        }
+      })
+      .filter(file => file !== null) // Remove files that couldn't be stat'd
       .sort((a, b) => b.stats.mtime - a.stats.mtime); // Sort by modification time, newest first
     
     // Remove old backups if we exceed MAX_BACKUPS
     if (files.length > MAX_BACKUPS) {
       const filesToDelete = files.slice(MAX_BACKUPS);
       filesToDelete.forEach(file => {
-        fs.unlinkSync(file.path);
-        console.log(`🗑️ Deleted old backup: ${file.name}`);
+        try {
+          fs.unlinkSync(file.path);
+          console.log(`🗑️ Deleted old backup: ${file.name}`);
+        } catch (unlinkError) {
+          console.error(`❌ Failed to delete backup ${file.name}:`, unlinkError.message);
+        }
       });
     }
   } catch (error) {

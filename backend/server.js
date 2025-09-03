@@ -11,14 +11,41 @@ const backupManager = require('./utils/backupManager');
 const { monitor, requestTrackingMiddleware } = require('./utils/monitoring');
 const { cloudBackup } = require('./utils/cloudBackup');
 
+// Initialize database connection
+const database = require('./database/db-connection');
+
 const app = express();
 const PORT = config.port;
 
 // Business monitoring middleware (must be first)
 app.use(requestTrackingMiddleware);
 
-// Environment-aware middleware
-app.use(cors(config.cors));
+// Environment-aware middleware with dynamic CORS
+const corsOptions = {
+  ...config.cors,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (config.cors.origin.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel preview deployments
+    if (origin.includes('.vercel.app')) {
+      console.log('🌐 Allowing Vercel deployment:', origin);
+      return callback(null, true);
+    }
+    
+    // Log blocked origins for debugging
+    console.log('🚫 Blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
 // Add environment info to all responses (development only)
@@ -54,6 +81,11 @@ app.get('/api/health', (req, res) => {
     version: '1.2.0',
     deployment: 'Auto-Deploy from GitHub',
     features: config.common.features,
+    cors: {
+      allowedOrigins: config.cors.origin,
+      currentOrigin: req.get('Origin'),
+      corsEnabled: true
+    },
     monitoring: {
       uptime: systemHealth.uptime,
       recentErrors: systemHealth.recentErrors,
@@ -68,6 +100,29 @@ app.get('/api/health', (req, res) => {
         logging_level: config.logging.level
       }
     })
+  });
+});
+
+// Simple connectivity test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Backend is reachable!',
+    timestamp: new Date().toISOString(),
+    environment: config.environment,
+    cors: {
+      allowedOrigins: config.cors.origin,
+      currentOrigin: req.get('Origin')
+    }
+  });
+});
+
+// Simple ping endpoint for basic connectivity
+app.get('/api/ping', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'pong',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -131,18 +186,36 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Initialize database connection
+  console.log('🗄️ Initializing database connection...');
+  try {
+    await database.connect();
+    console.log('✅ Database connection established');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    console.log('ℹ️  Server will continue with JSON database fallback');
+  }
   
   // Initialize automatic backup system
   console.log('🔄 Initializing backup system...');
   backupManager.setupAutomaticBackups();
   
   // Create initial backup on startup
-  setTimeout(() => {
-    const initialBackup = backupManager.createBackup('startup');
-    if (initialBackup.success) {
-      console.log('📋 Initial backup created successfully');
+  setTimeout(async () => {
+    try {
+      const initialBackup = await backupManager.createBackup('startup');
+      if (initialBackup.success) {
+        console.log('📋 Initial backup created successfully');
+      } else {
+        console.warn('⚠️ Initial backup failed:', initialBackup.error);
+      }
+    } catch (error) {
+      console.error('❌ Critical error during initial backup:', error);
+      // Don't crash the server, but log the error
+      monitor.logError(error, { type: 'STARTUP_BACKUP_FAILED' });
     }
   }, 2000);
 });

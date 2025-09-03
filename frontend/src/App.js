@@ -220,6 +220,29 @@ const MainPage = ({ onAdminToggle }) => {
     if (!isRetry) setRetryCount(0);
 
     try {
+      // First, test connectivity to the backend
+      console.log('🔗 Testing backend connectivity...');
+      console.log('🌐 API URL:', API_URL);
+      console.log('🌍 Environment:', config.environment);
+      
+      try {
+        const testResponse = await fetch(`${API_URL}/api/test`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (testResponse.ok) {
+          const testData = await testResponse.json();
+          console.log('✅ Backend connectivity test passed:', testData);
+        } else {
+          console.warn('⚠️ Backend connectivity test failed:', testResponse.status);
+        }
+      } catch (testError) {
+        console.warn('⚠️ Backend connectivity test error:', testError);
+      }
+
       const items = groceryList.split('\n')
         .map(item => item.trim())
         .filter(item => item.length > 0);
@@ -235,6 +258,8 @@ const MainPage = ({ onAdminToggle }) => {
         return;
       }
 
+      console.log('📝 Sending grocery list to backend:', items);
+      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -249,11 +274,17 @@ const MainPage = ({ onAdminToggle }) => {
 
       clearTimeout(timeoutId);
 
+      console.log('📡 Backend response status:', response.status);
+      console.log('📡 Backend response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Backend error response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Backend response data:', data);
 
       if (data.success) {
         setResults({
@@ -280,7 +311,8 @@ const MainPage = ({ onAdminToggle }) => {
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Error details:', error);
+      console.error('❌ Error stack:', error.stack);
       
       if (error.name === 'AbortError') {
         // Auto-retry for timeout errors (up to 3 times)
@@ -306,11 +338,18 @@ const MainPage = ({ onAdminToggle }) => {
           message: 'We tried a few times but couldn\'t connect. Please check your internet and try again.',
           showRetry: true
         });
+      } else if (error.message.includes('CORS') || error.message.includes('Not allowed by CORS')) {
+        setError({
+          type: 'cors_error',
+          title: 'Connection blocked',
+          message: 'Your request was blocked by security settings. This usually means the backend needs to be updated to allow your domain.',
+          showRetry: false
+        });
       } else {
         setError({
           type: 'unknown',
           title: 'Oops! Something went wrong',
-          message: 'Please try again in a moment. If this keeps happening, please let us know.',
+          message: `Error: ${error.message}. Please try again in a moment. If this keeps happening, please let us know.`,
           showRetry: true
         });
       }
@@ -375,6 +414,17 @@ const MainPage = ({ onAdminToggle }) => {
           </button>
         </div>
 
+        {/* Debug Info (Development Only) */}
+        {config.features.debugMode && (
+          <div className="fixed top-4 left-4 z-20">
+            <div className="bg-black/80 text-white px-3 py-2 rounded text-xs font-mono backdrop-blur">
+              <div>🌍 {config.environment}</div>
+              <div>🔗 {API_URL}</div>
+              <div>📱 {window.location.hostname}</div>
+            </div>
+          </div>
+        )}
+
         {/* Last Updated Info */}
         {lastUpdated && !isLoadingUpdate && (
           <div className="text-center mb-4">
@@ -382,6 +432,29 @@ const MainPage = ({ onAdminToggle }) => {
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
               Prices last updated: {formatLastUpdated(lastUpdated)}
             </div>
+          </div>
+        )}
+
+        {/* Debug Test Button (Development Only) */}
+        {config.features.debugMode && (
+          <div className="text-center mb-4">
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🧪 Testing backend connectivity...');
+                  const response = await fetch(`${API_URL}/api/test`);
+                  const data = await response.json();
+                  console.log('✅ Test successful:', data);
+                  alert(`Backend test successful!\nEnvironment: ${data.environment}\nCORS: ${JSON.stringify(data.cors, null, 2)}`);
+                } catch (error) {
+                  console.error('❌ Test failed:', error);
+                  alert(`Backend test failed: ${error.message}`);
+                }
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🧪 Test Backend Connection
+            </button>
           </div>
         )}
 
