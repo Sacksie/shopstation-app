@@ -14,7 +14,7 @@ import config from './config/environments';
 const API_URL = config.api.baseUrl;
 
 // Main shopping list page
-const MainPage = ({ onAdminToggle }) => {
+const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }) => {
   const [groceryList, setGroceryList] = useState('');
   const [results, setResults] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -29,7 +29,6 @@ const MainPage = ({ onAdminToggle }) => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showProductRequestModal, setShowProductRequestModal] = useState(false);
   const [selectedProductForRequest, setSelectedProductForRequest] = useState('');
-  const [showStorePortalDemo, setShowStorePortalDemo] = useState(false);
   const [shoppingListItems, setShoppingListItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [userPreferences, setUserPreferences] = useState({});
@@ -856,18 +855,7 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
           />
         </div>
 
-        {/* Store Portal Demo */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setShowStorePortalDemo(true)}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 font-medium"
-          >
-            🏪 See Store Portal Demo
-          </button>
-          <p className="text-xs text-gray-500 mt-2">
-            Kosher store owners: See what your store portal could look like
-          </p>
-        </div>
+
       </div>
 
       {/* Feedback Modal */}
@@ -882,12 +870,6 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
         onClose={() => setShowProductRequestModal(false)}
         productName={selectedProductForRequest}
         onRequestSubmitted={handleRequestSubmitted}
-      />
-
-      {/* Store Portal Demo Modal */}
-      <StorePortalDemo
-        isOpen={showStorePortalDemo}
-        onClose={() => setShowStorePortalDemo(false)}
       />
     </div>
   );
@@ -1538,6 +1520,7 @@ const App = () => {
   const [showLegalPages, setShowLegalPages] = useState(false);
   const [legalPageType, setLegalPageType] = useState('privacy');
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showStorePortalDemo, setShowStorePortalDemo] = useState(false);
 
   const openLegalPage = (pageType) => {
     setLegalPageType(pageType);
@@ -1547,7 +1530,11 @@ const App = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1">
-        <MainPage onAdminToggle={setShowAdmin} />
+        <MainPage 
+          onAdminToggle={setShowAdmin} 
+          showStorePortalDemo={showStorePortalDemo}
+          setShowStorePortalDemo={setShowStorePortalDemo}
+        />
       </div>
       
       {/* Footer - Hidden in admin mode */}
@@ -1589,6 +1576,12 @@ const App = () => {
               >
                 Copyright
               </button>
+              <button
+                onClick={() => setShowStorePortalDemo(true)}
+                className="text-purple-600 hover:text-purple-800 hover:underline font-medium"
+              >
+                🏪 Store Portal Demo
+              </button>
             </div>
           </div>
           
@@ -1613,6 +1606,12 @@ const App = () => {
 
       {/* Cookie Consent Banner */}
       <CookieConsent />
+
+      {/* Store Portal Demo Modal */}
+      <StorePortalDemo
+        isOpen={showStorePortalDemo}
+        onClose={() => setShowStorePortalDemo(false)}
+      />
     </div>
   );
 };

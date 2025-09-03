@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-const StorePortalDemo = ({ onClose }) => {
+const StorePortalDemo = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showWaitlistSuccess, setShowWaitlistSuccess] = useState(false);
   const [demoData] = useState({
     storeName: 'Kosher Corner',
     location: 'Golders Green, London',
@@ -41,6 +42,19 @@ const StorePortalDemo = ({ onClose }) => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const handleJoinWaitlist = () => {
+    // In a real app, this would send data to a backend
+    console.log('Joining waitlist for store portal...');
+    setShowWaitlistSuccess(true);
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      setShowWaitlistSuccess(false);
+    }, 3000);
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -309,8 +323,11 @@ const StorePortalDemo = ({ onClose }) => {
                 <p className="text-blue-700 mb-4">
                   Be among the first to try these new features when they launch!
                 </p>
-                <button className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
-                  Join Waitlist
+                <button 
+                  onClick={handleJoinWaitlist}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  {showWaitlistSuccess ? '✓ Joined!' : 'Join Waitlist'}
                 </button>
               </div>
             </div>
