@@ -19,7 +19,8 @@ class Analytics {
       const initialData = {
         searches: [],
         shopSelections: [],
-        dailyUsers: {}
+        dailyUsers: {},
+        errors: [] // Initialize errors array
       };
       fs.writeFileSync(this.analyticsFile, JSON.stringify(initialData, null, 2));
     }
@@ -31,7 +32,7 @@ class Analytics {
       return JSON.parse(data);
     } catch (error) {
       console.error('Error reading analytics file:', error);
-      return { searches: [], shopSelections: [], dailyUsers: {} };
+      return { searches: [], shopSelections: [], dailyUsers: {}, errors: [] };
     }
   }
 
@@ -97,6 +98,34 @@ class Analytics {
     analytics.shopSelections.push(selectionEntry);
     this.writeAnalytics(analytics);
     return selectionEntry;
+  }
+
+  // Track errors for monitoring
+  logError(error, context = {}) {
+    const analytics = this.readAnalytics();
+    const timestamp = new Date().toISOString();
+    
+    if (!analytics.errors) {
+      analytics.errors = [];
+    }
+    
+    const errorEntry = {
+      timestamp,
+      error: error.message || String(error),
+      stack: error.stack,
+      context,
+      day: new Date().toISOString().split('T')[0]
+    };
+
+    analytics.errors.push(errorEntry);
+    
+    // Keep only last 100 errors to prevent file from growing too large
+    if (analytics.errors.length > 100) {
+      analytics.errors = analytics.errors.slice(-100);
+    }
+    
+    this.writeAnalytics(analytics);
+    return errorEntry;
   }
 
   // Generate a simple user ID for basic tracking

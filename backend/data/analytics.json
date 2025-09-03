@@ -99,6 +99,202 @@
       "cheapestStore": "Kays",
       "mostExpensiveStore": "Tapuach",
       "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T21:41:01.200Z",
+      "userId": "user_4989cc22",
+      "items": [
+        "Challah"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0.5,
+      "cheapestStore": "Kays",
+      "mostExpensiveStore": "Tapuach",
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:05:11.504Z",
+      "userId": "user_552bc460",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:06:10.821Z",
+      "userId": "user_552bc461",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:06:23.923Z",
+      "userId": "user_552bc461",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:06:24.119Z",
+      "userId": "user_7737f895",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:06:51.476Z",
+      "userId": "user_552bc461",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:06:51.508Z",
+      "userId": "user_552bc461",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:07:20.633Z",
+      "userId": "user_552bc462",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:07:44.873Z",
+      "userId": "user_552bc462",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:08:06.657Z",
+      "userId": "user_552bc463",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:10:10.843Z",
+      "userId": "user_552bc47a",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:10:34.386Z",
+      "userId": "user_552bc47a",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:10:41.684Z",
+      "userId": "user_552bc47a",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-03T23:12:43.280Z",
+      "userId": "user_552bc47c",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-03"
     }
   ],
   "shopSelections": [
@@ -126,7 +322,15 @@
     ],
     "2025-09-03": [
       "user_3b62785",
-      "user_4989cbeb"
+      "user_4989cbeb",
+      "user_4989cc22",
+      "user_552bc460",
+      "user_552bc461",
+      "user_7737f895",
+      "user_552bc462",
+      "user_552bc463",
+      "user_552bc47a",
+      "user_552bc47c"
     ]
   }
 }

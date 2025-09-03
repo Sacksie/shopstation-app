@@ -10,5 +10,17 @@
     },
     "timestamp": "2025-08-21T14:24:33.643Z",
     "ipAddress": "::1"
+  },
+  {
+    "id": "consent_1756930970902_bjaknxqrf",
+    "preferences": {
+      "necessary": true,
+      "analytics": true,
+      "marketing": true,
+      "functional": true,
+      "timestamp": "2025-09-03T20:22:50.834Z"
+    },
+    "timestamp": "2025-09-03T20:22:50.834Z",
+    "ipAddress": "::1"
   }
 ]

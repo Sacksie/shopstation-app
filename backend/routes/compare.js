@@ -4,6 +4,248 @@ const dbOps = require('../database/db-operations');
 const { matchGroceryList, recordUserFeedback } = require('../utils/enhancedFuzzyMatch');
 const analytics = require('../utils/analytics');
 
+// Add the missing /compare route that tests expect
+router.post('/compare', async (req, res) => {
+  try {
+    const { items } = req.body;
+    
+    console.log('Received grocery list:', items);
+    console.log('Request origin:', req.get('Origin'));
+    console.log('Request headers:', req.headers);
+    
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide items as an array'
+      });
+    }
+
+    // Validate and sanitize each grocery item
+    if (items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Items list cannot be empty'
+      });
+    }
+
+    if (items.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Items list cannot exceed 100 items'
+      });
+    }
+
+    // Sanitize and validate each item
+    const sanitizedList = items
+      .filter(item => item !== null && item !== undefined)
+      .map(item => {
+        if (typeof item === 'string') {
+          // Trim whitespace and limit length
+          return item.trim().substring(0, 200);
+        }
+        return String(item).trim().substring(0, 200);
+      })
+      .filter(item => item.length > 0); // Remove empty items
+
+    if (sanitizedList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid items found in items list'
+      });
+    }
+
+    // Get all products and stores from the new database layer
+    let stores, products;
+    
+    try {
+      stores = await dbOps.getStores();
+      products = await dbOps.getProducts();
+      
+      console.log('Products in database:', products.length);
+      console.log('Stores:', stores.length);
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError);
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection failed',
+        message: 'Unable to retrieve store and product information. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      });
+    }
+    
+    // If no products in database, return a helpful message
+    if (!products || products.length === 0) {
+      // Still log the search attempt for analytics
+      try {
+        analytics.logSearch({
+          items: sanitizedList,
+          matchedItems: 0,
+          unmatchedItems: sanitizedList,
+          storesCompared: stores ? stores.length : 0,
+          savings: 0,
+          cheapestStore: null,
+          mostExpensiveStore: null
+        });
+      } catch (analyticsError) {
+        console.error('Analytics logging failed:', analyticsError);
+      }
+      
+      return res.json({
+        success: true,
+        results: [],
+        stores: (stores || []).map(store => ({
+          name: store.name || store.slug,
+          location: store.location,
+          phone: store.phone,
+          hours: store.hours,
+          rating: store.rating,
+          totalPrice: 0,
+          items: []
+        })),
+        message: 'No products found in database. Please try again later or contact support.',
+        searchStats: {
+          totalItems: sanitizedList.length,
+          matchedItems: 0,
+          unmatchedItems: sanitizedList.length
+        }
+      });
+    }
+
+    // Use the existing matching logic
+    const searchResults = await matchGroceryList(sanitizedList, products, stores);
+    
+    console.log('Search results:', searchResults);
+
+    // Format results for the API response - match test expectations
+    const results = searchResults.matched.map(item => {
+      console.log('Processing item:', item);
+      console.log('Available products:', products.map(p => ({ slug: p.slug, name: p.name })));
+      
+      // Get the full product object from the database
+      const fullProduct = products.find(p => p.slug === item.matched || p.name === item.matched);
+      console.log('Found product:', fullProduct);
+      
+      // Find stores that have this product
+      const productStores = [];
+      if (fullProduct && fullProduct.prices) {
+        console.log('Product prices:', fullProduct.prices);
+        
+        // Handle both array and object price formats
+        if (Array.isArray(fullProduct.prices)) {
+          // Array format: [{ store_name: 'Store', price: 2.5, unit: 'unit' }]
+          fullProduct.prices.forEach(priceData => {
+            console.log('Processing price data:', priceData);
+            console.log('Looking for store:', priceData.store_name);
+            console.log('Available stores:', stores.map(s => ({ name: s.name, slug: s.slug })));
+            
+            const store = stores.find(s => s.name === priceData.store_name || s.slug === priceData.store_name);
+            console.log('Found store:', store);
+            
+            if (store && priceData.price) {
+              productStores.push({
+                name: store.name || store.slug,
+                price: priceData.price,
+                unit: priceData.unit || 'unit',
+                location: store.location,
+                phone: store.phone,
+                hours: store.hours,
+                rating: store.rating
+              });
+            }
+          });
+        } else {
+          // Object format: { 'Store': { price: 2.5, unit: 'unit' } }
+          Object.entries(fullProduct.prices).forEach(([storeName, priceData]) => {
+            const store = stores.find(s => s.name === storeName || s.slug === storeName);
+            if (store && priceData.price) {
+              productStores.push({
+                name: store.name || store.slug,
+                price: priceData.price,
+                unit: priceData.unit || 'unit',
+                location: store.location,
+                phone: store.phone,
+                hours: store.hours,
+                rating: store.rating
+              });
+            }
+          });
+        }
+      }
+      
+      console.log('Product stores:', productStores);
+      
+      return {
+        product: item.original,
+        matchedProduct: fullProduct ? fullProduct.displayName || fullProduct.name : item.original,
+        confidence: item.confidence || 0,
+        method: item.method || 'unknown',
+        stores: productStores,
+        bestPrice: productStores.length > 0 ? Math.min(...productStores.map(s => s.price)) : null,
+        cheapestStore: productStores.length > 0 ? productStores.reduce((min, store) => store.price < min.price ? store : min).name : null
+      };
+    });
+
+    const unmatched = searchResults.unmatched;
+
+    // Log search analytics
+    try {
+      analytics.logSearch({
+        items: sanitizedList,
+        matchedItems: results.length,
+        unmatchedItems: unmatched.length,
+        storesCompared: stores.length,
+        savings: searchResults.totalSavings || 0,
+        cheapestStore: searchResults.cheapestStore,
+        mostExpensiveStore: searchResults.mostExpensiveStore
+      });
+    } catch (analyticsError) {
+      console.error('Analytics logging failed:', analyticsError);
+    }
+
+    // Return the formatted response
+    res.json({
+      success: true,
+      results: results,
+      unmatched: unmatched,
+      stores: stores.map(store => ({
+        name: store.name || store.slug,
+        location: store.location,
+        phone: store.phone,
+        hours: store.hours,
+        rating: store.rating
+      })),
+      searchStats: {
+        totalItems: sanitizedList.length,
+        matchedItems: results.length,
+        unmatchedItems: unmatched.length,
+        totalSavings: searchResults.totalSavings || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Compare API error:', error);
+    
+    // Log error for monitoring
+    try {
+      analytics.logError(error, { 
+        type: 'COMPARE_API_ERROR',
+        userAgent: req.get('User-Agent'),
+        origin: req.get('Origin')
+      });
+    } catch (analyticsError) {
+      console.error('Analytics error logging failed:', analyticsError);
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'An unexpected error occurred. Please try again later.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Original route for backward compatibility
 router.post('/compare-groceries', async (req, res) => {
   try {
     const { groceryList } = req.body;
@@ -68,7 +310,7 @@ router.post('/compare-groceries', async (req, res) => {
         success: false,
         error: 'Database connection failed',
         message: 'Unable to retrieve store and product information. Please try again later.',
-        details: config.environment === 'development' ? dbError.message : undefined
+        details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
       });
     }
     
@@ -187,7 +429,7 @@ router.post('/compare-groceries', async (req, res) => {
       }
       // Stores with items come first
       if (a.totalPrice === 0) return 1;
-      if (b.totalPrice === 0) return -1;
+      if (b.totalPrice === 0) return 1;
       // Sort by price
       return a.totalPrice - b.totalPrice;
     });
@@ -204,7 +446,7 @@ router.post('/compare-groceries', async (req, res) => {
       cheapestStore = validStores.find(store => store.totalPrice === prices[0]).name;
       mostExpensiveStore = validStores.find(store => store.totalPrice === prices[prices.length - 1]).name;
     }
-
+    
     // Log search analytics
     try {
       analytics.logSearch({
@@ -220,6 +462,7 @@ router.post('/compare-groceries', async (req, res) => {
       console.error('Analytics logging failed:', analyticsError);
     }
 
+    // Return the formatted response
     res.json({
       success: true,
       stores: storeResults,

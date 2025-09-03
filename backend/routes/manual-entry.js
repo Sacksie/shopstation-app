@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database/kosher-db');
+const dbOps = require('../database/db-operations');
 const adminAuth = require('../middleware/adminAuth');
 const backupManager = require('../utils/backupManager');
 
@@ -16,19 +16,33 @@ router.post('/add-price', adminAuth, async (req, res) => {
       });
     }
     
-    const success = db.updateProductPrice(productName, store, parseFloat(price), unit);
+    const productSlug = productName.toLowerCase().replace(/\s+/g, '-');
+    let result;
     
-    if (success) {
-      res.json({
-        success: true,
-        message: `Price added: ${productName} - £${price} (${unit}) at ${store}`
+    try {
+      result = await dbOps.updateProductPrice(productSlug, store, { 
+        price: parseFloat(price), 
+        unit, 
+        updatedBy: 'admin' 
       });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: 'Failed to add price'
-      });
+    } catch (error) {
+      // Product might not exist, try to add it first
+      try {
+        await dbOps.addProduct({ name: productName, slug: productSlug });
+        result = await dbOps.updateProductPrice(productSlug, store, { 
+          price: parseFloat(price), 
+          unit, 
+          updatedBy: 'admin' 
+        });
+      } catch (addError) {
+        result = { success: false };
+      }
     }
+    
+    res.json({
+      success: result.success,
+      message: result.success ? `Price added: ${productName} - £${price} (${unit}) at ${store}` : 'Failed to add price'
+    });
     
   } catch (error) {
     console.error('Error adding price:', error);
@@ -59,8 +73,9 @@ router.post('/quick', adminAuth, async (req, res) => {
       }
     }
     
-    const stores = db.getStores();
-    if (!stores[store]) {
+    const stores = await dbOps.getStores();
+    const storeExists = stores.find(s => s.name === store || s.slug === store);
+    if (!storeExists) {
       return res.status(400).json({
         error: `Store "${store}" not found`
       });
@@ -79,16 +94,26 @@ router.post('/quick', adminAuth, async (req, res) => {
         continue;
       }
       
-      const success = db.updateProductPrice(
-        displayName || name,
-        store,
-        price,
-        unit
-      );
+      // First ensure product exists
+      const productSlug = (displayName || name).toLowerCase().replace(/\s+/g, '-');
+      let success = false;
+      try {
+        const result = await dbOps.updateProductPrice(productSlug, store, { price, unit, updatedBy: 'admin' });
+        success = result.success;
+      } catch (error) {
+        // Product might not exist, try to add it first
+        try {
+          await dbOps.addProduct({ name: displayName || name, slug: productSlug });
+          const result = await dbOps.updateProductPrice(productSlug, store, { price, unit, updatedBy: 'admin' });
+          success = result.success;
+        } catch (addError) {
+          success = false;
+        }
+      }
       
       results.push({
         name: name,
-        success: success
+        success: success || false
       });
     }
     
@@ -132,7 +157,21 @@ router.post('/bulk', adminAuth, async (req, res) => {
       const [product, price, unit] = line.split(',').map(s => s.trim());
       
       if (product && price && unit) {
-        const success = db.updateProductPrice(product, store, price, unit);
+        const productSlug = product.toLowerCase().replace(/\s+/g, '-');
+        let success = false;
+        try {
+          const result = await dbOps.updateProductPrice(productSlug, store, { price: parseFloat(price), unit, updatedBy: 'admin' });
+          success = result.success;
+        } catch (error) {
+          // Product might not exist, try to add it first
+          try {
+            await dbOps.addProduct({ name: product, slug: productSlug });
+            const result = await dbOps.updateProductPrice(productSlug, store, { price: parseFloat(price), unit, updatedBy: 'admin' });
+            success = result.success;
+          } catch (addError) {
+            success = false;
+          }
+        }
         results.push({
           product,
           success
@@ -157,8 +196,8 @@ router.post('/bulk', adminAuth, async (req, res) => {
 // Get all products (for admin view)
 router.get('/products', adminAuth, async (req, res) => {
   try {
-    const products = db.getAllProducts();
-    const stores = db.getStores();
+    const products = await dbOps.getProducts();
+    const stores = await dbOps.getStores();
     
     res.json({
       success: true,
@@ -177,8 +216,8 @@ router.get('/products', adminAuth, async (req, res) => {
 // Get inventory data (for admin panel)
 router.get('/inventory', adminAuth, async (req, res) => {
   try {
-    const products = db.getAllProducts();
-    const stores = db.getStores();
+    const products = await dbOps.getProducts();
+    const stores = await dbOps.getStores();
     
     res.json({
       success: true,
@@ -211,7 +250,11 @@ router.put('/update-product', adminAuth, async (req, res) => {
     // Update each store's price data
     for (const [store, data] of Object.entries(updates)) {
       if (data && data.price && data.unit) {
-        db.updateProductPrice(productKey, store, data.price, data.unit);
+        await dbOps.updateProductPrice(productKey, store, {
+          price: parseFloat(data.price),
+          unit: data.unit,
+          updatedBy: 'admin'
+        });
       }
     }
     
@@ -239,7 +282,8 @@ router.put('/update-product-info', adminAuth, async (req, res) => {
       });
     }
     
-    const success = db.updateProductInfo(productKey, { displayName, category });
+    const result = await dbOps.updateProductInfo(productKey, { displayName, category });
+    const success = result.success;
     
     if (success) {
       res.json({
@@ -280,7 +324,8 @@ router.delete('/delete-product/:productKey', adminAuth, async (req, res) => {
       console.warn('⚠️ Backup failed but continuing with deletion');
     }
     
-    const success = db.deleteProduct(productKey);
+    const result = await dbOps.deleteProduct(productKey);
+    const success = result.success;
     
     if (success) {
       res.json({

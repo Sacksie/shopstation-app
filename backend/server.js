@@ -62,6 +62,8 @@ const manualEntryRoutes = require('./routes/manual-entry');
 const receiptRoutes = require('./routes/receipts');
 const backupRoutes = require('./routes/backup');
 const gdprRoutes = require('./routes/gdpr');
+const productRequestRoutes = require('./routes/product-requests');
+const productRoutes = require('./routes/products');
 
 // Use routes
 app.use('/api', compareRoutes);
@@ -69,6 +71,8 @@ app.use('/api/manual', manualEntryRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/gdpr', gdprRoutes);
+app.use('/api/requests', productRequestRoutes);
+app.use('/api/products', productRoutes);
 
 // Enhanced health check with business monitoring
 app.get('/api/health', (req, res) => {

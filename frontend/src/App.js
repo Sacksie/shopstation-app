@@ -4,6 +4,10 @@ import GroceryAdminPanel from './components/GroceryAdminPanel';
 import AnalyticsPage from './components/AnalyticsPage';
 import CookieConsent from './components/CookieConsent';
 import LegalPages from './components/LegalPages';
+import ProductRequestModal from './components/ProductRequestModal';
+import EnhancedProductMatching from './components/EnhancedProductMatching';
+import ShoppingList from './components/ShoppingList';
+import StorePortalDemo from './components/StorePortalDemo';
 import NewShopstationLogo from './NewShopstationLogo.png';
 import config from './config/environments';
 
@@ -23,6 +27,12 @@ const MainPage = ({ onAdminToggle }) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showProductRequestModal, setShowProductRequestModal] = useState(false);
+  const [selectedProductForRequest, setSelectedProductForRequest] = useState('');
+  const [showStorePortalDemo, setShowStorePortalDemo] = useState(false);
+  const [shoppingListItems, setShoppingListItems] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [userPreferences, setUserPreferences] = useState({});
 
   // Fetch last updated timestamp
   const fetchLastUpdated = async () => {
@@ -43,7 +53,64 @@ const MainPage = ({ onAdminToggle }) => {
   // Load last updated on mount
   useEffect(() => {
     fetchLastUpdated();
+    loadProducts();
+    loadUserPreferences();
   }, []);
+
+  // Load products for enhanced matching
+  const loadProducts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data.products || []);
+      }
+    } catch (error) {
+      console.log('Could not load products for enhanced matching');
+    }
+  };
+
+  // Load user preferences from localStorage
+  const loadUserPreferences = () => {
+    try {
+      const saved = localStorage.getItem('shopstation_preferences');
+      if (saved) {
+        setUserPreferences(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
+
+  // Handle product request
+  const handleProductRequest = (productName) => {
+    setSelectedProductForRequest(productName);
+    setShowProductRequestModal(true);
+  };
+
+  // Handle product request submission
+  const handleRequestSubmitted = (requestId) => {
+    console.log('Product request submitted:', requestId);
+    // Could show a success message or update UI
+  };
+
+  // Handle product selection from enhanced matching
+  const handleProductSelect = (product) => {
+    // Add to shopping list
+    const newItem = {
+      id: Date.now(),
+      productName: product.name,
+      quantity: 1,
+      unit: 'item',
+      prices: product.prices || []
+    };
+    setShoppingListItems(prev => [...prev, newItem]);
+  };
+
+  // Handle shopping list updates
+  const handleShoppingListUpdate = (updatedList) => {
+    setShoppingListItems(updatedList.items || updatedList);
+  };
 
   // Shopping list parsing and analysis functions
   const parseShoppingList = (text) => {
@@ -397,7 +464,11 @@ const MainPage = ({ onAdminToggle }) => {
 
   // Show results if available
   if (results) {
-    return <ResultsPage results={results} onBack={() => setResults(null)} />;
+    return <ResultsPage 
+      results={results} 
+      onBack={() => setResults(null)} 
+      onProductRequest={handleProductRequest}
+    />;
   }
 
   // Main landing page
@@ -761,6 +832,42 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
         <div className="mt-8">
           <ReceiptUpload onUploadSuccess={(data) => console.log('Receipt:', data)} />
         </div>
+
+        {/* Enhanced Product Matching */}
+        <div className="mt-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">🔍 Enhanced Product Search</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Search for products with smart matching and multiple options
+            </p>
+            <EnhancedProductMatching
+              onProductSelect={handleProductSelect}
+              products={products}
+              userPreferences={userPreferences}
+            />
+          </div>
+        </div>
+
+        {/* Shopping List */}
+        <div className="mt-8">
+          <ShoppingList
+            items={shoppingListItems}
+            onListUpdate={handleShoppingListUpdate}
+          />
+        </div>
+
+        {/* Store Portal Demo */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setShowStorePortalDemo(true)}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 font-medium"
+          >
+            🏪 See Store Portal Demo
+          </button>
+          <p className="text-xs text-gray-500 mt-2">
+            Kosher store owners: See what your store portal could look like
+          </p>
+        </div>
       </div>
 
       {/* Feedback Modal */}
@@ -768,13 +875,34 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
         isOpen={showFeedbackModal} 
         onClose={() => setShowFeedbackModal(false)} 
       />
+
+      {/* Product Request Modal */}
+      <ProductRequestModal
+        isOpen={showProductRequestModal}
+        onClose={() => setShowProductRequestModal(false)}
+        productName={selectedProductForRequest}
+        onRequestSubmitted={handleRequestSubmitted}
+      />
+
+      {/* Store Portal Demo Modal */}
+      <StorePortalDemo
+        isOpen={showStorePortalDemo}
+        onClose={() => setShowStorePortalDemo(false)}
+      />
     </div>
   );
 };
 
 // Results page component
-const ResultsPage = ({ results, onBack }) => {
+const ResultsPage = ({ results, onBack, onProductRequest }) => {
   const [expandedStores, setExpandedStores] = useState(new Set());
+  
+  // Handle product request from unmatched items
+  const handleProductRequest = (productName) => {
+    if (onProductRequest) {
+      onProductRequest(productName);
+    }
+  };
   
   const toggleStore = (index) => {
     const newExpanded = new Set(expandedStores);
@@ -1044,16 +1172,28 @@ const ResultsPage = ({ results, onBack }) => {
             <p className="text-amber-700 mb-4">
               Don't worry! These items weren't in our database yet, but you can still find them at the stores:
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               {results.unmatchedItems.map((item, idx) => (
-                <span key={idx} className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
-                  {item}
-                </span>
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {item}
+                  </span>
+                  <button
+                    onClick={() => handleProductRequest(item)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded-full transition-colors"
+                    title="Request this product be added to our database"
+                  >
+                    + Request
+                  </button>
+                </div>
               ))}
             </div>
             <div className="mt-4 p-4 bg-white rounded-xl border border-amber-200">
               <p className="text-sm text-amber-700">
                 💡 <strong>Tip:</strong> These items are typically available at most kosher stores. Your total savings might be even higher!
+              </p>
+              <p className="text-sm text-blue-700 mt-2">
+                🆕 <strong>New:</strong> Click "Request" above any item to help us add it to our database!
               </p>
             </div>
           </div>

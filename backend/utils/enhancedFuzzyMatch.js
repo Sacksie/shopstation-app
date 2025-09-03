@@ -137,6 +137,9 @@ class EnhancedFuzzyMatcher {
 
   // Enhanced normalize function
   normalize(text) {
+    if (!text || typeof text !== 'string') {
+      return '';
+    }
     return text
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '') // Keep spaces for better processing
