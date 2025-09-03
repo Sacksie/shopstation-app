@@ -5,8 +5,9 @@ import AnalyticsPage from './components/AnalyticsPage';
 import CookieConsent from './components/CookieConsent';
 import LegalPages from './components/LegalPages';
 import NewShopstationLogo from './NewShopstationLogo.png';
+import config from './config/environments';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend-production-2cbb.up.railway.app';
+const API_URL = config.api.baseUrl;
 
 // Main shopping list page
 const MainPage = ({ onAdminToggle }) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import config from '../config/environments';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://grocery-backend-production-5c7e.up.railway.app';
+const API_URL = config.api.baseUrl;
 
 const ReceiptUpload = ({ onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);

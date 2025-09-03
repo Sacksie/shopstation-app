@@ -3,15 +3,26 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Load environment-specific configuration
+const config = require('./config/environments');
+
 // Initialize backup system
 const backupManager = require('./utils/backupManager');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
-// Middleware
-app.use(cors());
+// Environment-aware middleware
+app.use(cors(config.cors));
 app.use(express.json({ limit: '10mb' }));
+
+// Add environment info to all responses (development only)
+if (config.environment === 'development') {
+  app.use((req, res, next) => {
+    res.setHeader('X-Environment', config.environment);
+    next();
+  });
+}
 
 // Import routes
 const compareRoutes = require('./routes/compare');
@@ -27,13 +38,23 @@ app.use('/api/receipts', receiptRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/gdpr', gdprRoutes);
 
-// Health check
+// Health check with environment information
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    deployment: 'Auto-Deploy from GitHub'
+    environment: config.environment,
+    version: '1.1.0',
+    deployment: 'Auto-Deploy from GitHub',
+    features: config.common.features,
+    // Only show detailed info in development
+    ...(config.environment === 'development' && {
+      config_summary: {
+        cors_origins: config.cors.origin,
+        backup_interval: config.database.backup_interval,
+        logging_level: config.logging.level
+      }
+    })
   });
 });
 

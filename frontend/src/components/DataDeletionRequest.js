@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import config from '../config/environments';
 
 const DataDeletionRequest = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ const DataDeletionRequest = ({ onClose }) => {
 
     try {
       // Send to backend
-      const API_URL = process.env.REACT_APP_API_URL || 'https://grocery-backend-production-5c7e.up.railway.app';
+      const API_URL = config.api.baseUrl;
       const response = await fetch(`${API_URL}/api/gdpr/data-deletion-request`, {
         method: 'POST',
         headers: {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import config, { createApiUrl } from '../config/environments';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend-production-2cbb.up.railway.app';
+// Using environment-aware API URL configuration
+const API_URL = config.api.baseUrl;
 
 // Authentication Gate Component
 const AdminAuth = ({ onAuthenticated }) => {

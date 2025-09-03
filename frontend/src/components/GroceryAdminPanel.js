@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import config from '../config/environments';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend-production-2cbb.up.railway.app';
+const API_URL = config.api.baseUrl;
 
 // Real kosher stores data
 const KOSHER_STORES = [

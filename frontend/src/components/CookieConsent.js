@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import config from '../config/environments';
 
 const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
@@ -31,7 +32,7 @@ const CookieConsent = () => {
     
     // Save to backend
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://grocery-backend-production-5c7e.up.railway.app';
+      const API_URL = config.api.baseUrl;
       await fetch(`${API_URL}/api/gdpr/cookie-consent`, {
         method: 'POST',
         headers: {
@@ -63,7 +64,7 @@ const CookieConsent = () => {
     
     // Save to backend
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://grocery-backend-production-5c7e.up.railway.app';
+      const API_URL = config.api.baseUrl;
       await fetch(`${API_URL}/api/gdpr/cookie-consent`, {
         method: 'POST',
         headers: {
@@ -92,7 +93,7 @@ const CookieConsent = () => {
     
     // Save to backend
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://grocery-backend-production-5c7e.up.railway.app';
+      const API_URL = config.api.baseUrl;
       await fetch(`${API_URL}/api/gdpr/cookie-consent`, {
         method: 'POST',
         headers: {
