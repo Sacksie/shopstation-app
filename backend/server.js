@@ -6,11 +6,16 @@ require('dotenv').config();
 // Load environment-specific configuration
 const config = require('./config/environments');
 
-// Initialize backup system
+// Initialize business-critical systems
 const backupManager = require('./utils/backupManager');
+const { monitor, requestTrackingMiddleware } = require('./utils/monitoring');
+const { cloudBackup } = require('./utils/cloudBackup');
 
 const app = express();
 const PORT = config.port;
+
+// Business monitoring middleware (must be first)
+app.use(requestTrackingMiddleware);
 
 // Environment-aware middleware
 app.use(cors(config.cors));
@@ -38,15 +43,23 @@ app.use('/api/receipts', receiptRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/gdpr', gdprRoutes);
 
-// Health check with environment information
+// Enhanced health check with business monitoring
 app.get('/api/health', (req, res) => {
+  const systemHealth = monitor.getSystemHealth();
+  
   res.json({ 
-    status: 'OK', 
+    status: systemHealth.status,
     timestamp: new Date().toISOString(),
     environment: config.environment,
-    version: '1.1.0',
+    version: '1.2.0',
     deployment: 'Auto-Deploy from GitHub',
     features: config.common.features,
+    monitoring: {
+      uptime: systemHealth.uptime,
+      recentErrors: systemHealth.recentErrors,
+      averageResponseTime: systemHealth.averageResponseTime,
+      totalRequests: systemHealth.metrics.apiCalls
+    },
     // Only show detailed info in development
     ...(config.environment === 'development' && {
       config_summary: {
@@ -58,12 +71,63 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Business monitoring endpoints
+app.get('/api/system/status', (req, res) => {
+  const health = monitor.getSystemHealth();
+  res.json(health);
+});
+
+app.get('/api/system/backups', async (req, res) => {
+  try {
+    const backups = cloudBackup.listBackups();
+    res.json({
+      success: true,
+      backups: backups.slice(0, 20), // Last 20 backups
+      totalCount: backups.length
+    });
+  } catch (error) {
+    monitor.logError(error, { type: 'BACKUP_LIST_API' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve backup list'
+    });
+  }
+});
+
+app.post('/api/system/backup', async (req, res) => {
+  try {
+    const { reason = 'manual' } = req.body;
+    monitor.trackBusinessEvent('manual_backup_requested', { reason });
+    
+    const result = await cloudBackup.createFullBackup(reason);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    monitor.logError(error, { type: 'MANUAL_BACKUP_API' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create backup'
+    });
+  }
+});
+
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  monitor.logError(err, { 
+    type: 'EXPRESS_ERROR',
+    url: req.url,
+    method: req.method,
+    userAgent: req.get('User-Agent')
+  });
+  
   res.status(500).json({ 
+    success: false,
     error: 'Internal server error', 
-    message: err.message 
+    message: config.environment === 'development' ? err.message : 'An error occurred'
   });
 });
 
