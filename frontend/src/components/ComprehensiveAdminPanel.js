@@ -9,10 +9,16 @@ const ComprehensiveAdminPanel = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // Authentication Component
+  // Authentication Component with PIN support
   const AuthScreen = () => {
+    const [pinAttempts, setPinAttempts] = useState(0);
+    const [showFailsafe, setShowFailsafe] = useState(false);
+    const [inputType, setInputType] = useState('password');
+
     const handleAuth = async (e) => {
       e.preventDefault();
+      setAuthError('');
+      
       try {
         const response = await fetch(`${API_URL}/api/manual/inventory`, {
           headers: { 'x-admin-password': adminPassword }
@@ -21,44 +27,91 @@ const ComprehensiveAdminPanel = () => {
         if (response.ok) {
           setIsAuthenticated(true);
           setAuthError('');
+          setPinAttempts(0);
+          setShowFailsafe(false);
         } else {
-          setAuthError('Invalid admin password');
+          // Check if it's a PIN attempt
+          if (adminPassword.length === 6 && /^\d+$/.test(adminPassword)) {
+            setPinAttempts(prev => prev + 1);
+            if (pinAttempts >= 1) {
+              setShowFailsafe(true);
+              setAuthError('PIN failed twice. Use failsafe password: test123');
+            } else {
+              setAuthError('Invalid PIN. Try again or use failsafe password after 2 attempts.');
+            }
+          } else {
+            setAuthError('Invalid PIN or password');
+          }
         }
       } catch (error) {
-        setAuthError('Connection error');
+        setAuthError('Connection error. Please check your internet connection.');
+      }
+    };
+
+    const handleInputChange = (e) => {
+      const value = e.target.value;
+      setAdminPassword(value);
+      
+      // Auto-detect if it's a PIN (6 digits) and switch input type
+      if (value.length === 6 && /^\d+$/.test(value)) {
+        setInputType('text');
+      } else if (value.length > 6 || !/^\d+$/.test(value)) {
+        setInputType('password');
       }
     };
 
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md w-96">
-          <h2 className="text-2xl font-bold mb-6 text-center">ShopStation Admin</h2>
-          <form onSubmit={handleAuth}>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Admin Password
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-gray-900">ShopStation Admin</h2>
+            <p className="text-gray-600 mt-2">Enter your PIN or password to continue</p>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {adminPassword.length === 6 && /^\d+$/.test(adminPassword) ? 'PIN' : 'PIN or Password'}
               </label>
               <input
-                type="password"
+                type={inputType}
                 value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                onInput={(e) => setAdminPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autoComplete="new-password"
-                key="admin-password-input"
-                placeholder="Enter admin password"
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg font-mono"
+                placeholder={adminPassword.length === 6 && /^\d+$/.test(adminPassword) ? "••••••" : "Enter PIN or password"}
                 maxLength="50"
                 required
+                autoComplete="off"
               />
+              {adminPassword.length === 6 && /^\d+$/.test(adminPassword) && (
+                <p className="text-xs text-gray-500 mt-1 text-center">PIN detected</p>
+              )}
             </div>
+
             {authError && (
-              <div className="mb-4 text-red-600 text-sm">{authError}</div>
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+                {authError}
+              </div>
             )}
+
+            {showFailsafe && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+                <div className="font-medium mb-1">🔑 Failsafe Access</div>
+                <div>After 2 failed PIN attempts, use: <code className="bg-yellow-100 px-1 rounded">test123</code></div>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
+              <div className="font-medium mb-1">📱 Valid PINs:</div>
+              <div className="font-mono">050625 • 331919</div>
+            </div>
+
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors min-h-[48px]"
             >
-              Login
+              Access Admin Panel
             </button>
           </form>
         </div>
@@ -69,30 +122,31 @@ const ComprehensiveAdminPanel = () => {
   // Navigation Tabs
   const TabNavigation = () => {
     const tabs = [
-      { id: 'inventory', name: 'Inventory', icon: '📦' },
-      { id: 'analytics', name: 'Analytics', icon: '📊' },
-      { id: 'add-product', name: 'Add Products', icon: '➕' },
-      { id: 'backup', name: 'Backup & Restore', icon: '💾' },
-      { id: 'settings', name: 'Settings', icon: '⚙️' },
-      { id: 'monitoring', name: 'System Health', icon: '🔥' }
+      { id: 'inventory', name: 'Inventory', icon: '📦', shortName: 'Products' },
+      { id: 'analytics', name: 'Analytics', icon: '📊', shortName: 'Stats' },
+      { id: 'add-product', name: 'Add Products', icon: '➕', shortName: 'Add' },
+      { id: 'backup', name: 'Backup & Restore', icon: '💾', shortName: 'Backup' },
+      { id: 'settings', name: 'Settings', icon: '⚙️', shortName: 'Settings' },
+      { id: 'monitoring', name: 'System Health', icon: '🔥', shortName: 'Health' }
     ];
 
     return (
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4">
-          <div className="flex space-x-1 overflow-x-auto">
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center space-x-2 border-b-2 transition duration-200 ${
+                className={`min-w-[60px] sm:min-w-auto px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 border-b-2 transition duration-200 touch-manipulation ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600 bg-blue-50'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.name}</span>
+                <span className="text-lg sm:text-base">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.name}</span>
+                <span className="sm:hidden text-xs">{tab.shortName}</span>
               </button>
             ))}
           </div>
@@ -135,7 +189,176 @@ const ComprehensiveAdminPanel = () => {
   );
 };
 
-// Page 1: Inventory Management with Inline Editing
+// Inline Editable Cell Component
+const InlineEditableCell = ({ value, onSave, type = 'text', placeholder = 'Tap to add', className = '', isEditing, onStartEdit, onCancelEdit, inputRef }) => {
+  const [editValue, setEditValue] = useState(value || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    setEditValue(value || '');
+  }, [value]);
+
+  const handleSave = async () => {
+    if (editValue === value) {
+      onCancelEdit();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave(editValue);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        onCancelEdit();
+      }, 1000);
+    } catch (error) {
+      console.error('Save error:', error);
+      // Reset on error
+      setEditValue(value || '');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setEditValue(value || '');
+      onCancelEdit();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type={type}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyPress}
+          className={`w-full px-2 py-1 border-2 border-blue-500 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${className}`}
+          autoFocus
+          inputMode={type === 'number' ? 'decimal' : 'text'}
+        />
+        {isSaving && (
+          <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      onClick={onStartEdit}
+      className={`min-h-[44px] flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100 rounded transition-colors ${className}`}
+    >
+      {value ? (
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">{value}</span>
+          {saveSuccess && (
+            <div className="text-green-500 animate-pulse">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
+        </div>
+      ) : (
+        <span className="text-gray-400 text-sm">{placeholder}</span>
+      )}
+    </div>
+  );
+};
+
+// Quick Price Entry Modal
+const QuickPriceModal = ({ isOpen, onClose, onSave, productName, storeName, currentPrice, currentUnit }) => {
+  const [price, setPrice] = useState(currentPrice || '');
+  const [unit, setUnit] = useState(currentUnit || 'item');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const commonUnits = ['item', 'kg', '500g', 'lb', 'litre', '2 pints', 'pint', 'dozen', 'pack', 'loaf', 'bottle'];
+
+  const handleSave = async () => {
+    if (!price || parseFloat(price) <= 0) return;
+    
+    setIsSaving(true);
+    try {
+      await onSave(parseFloat(price), unit);
+      onClose();
+    } catch (error) {
+      console.error('Error saving price:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-sm w-full p-6">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Add Price</h3>
+          <p className="text-sm text-gray-600">{productName} at {storeName}</p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Price (£)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="0.00"
+              autoFocus
+              inputMode="decimal"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {commonUnits.map(unitOption => (
+                <option key={unitOption} value={unitOption}>{unitOption}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex space-x-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!price || parseFloat(price) <= 0 || isSaving}
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg"
+          >
+            {isSaving ? 'Saving...' : 'Save Price'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Page 1: Inventory Management with Enhanced Mobile-First Inline Editing
 const InventoryPage = ({ adminPassword }) => {
   const [products, setProducts] = useState({});
   const [stores, setStores] = useState({});
@@ -144,6 +367,8 @@ const InventoryPage = ({ adminPassword }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [quickPriceModal, setQuickPriceModal] = useState(null);
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
   const inputRef = useRef(null);
 
   const fetchInventory = useCallback(async () => {
@@ -179,13 +404,12 @@ const InventoryPage = ({ adminPassword }) => {
     setEditValue(currentValue || '');
   };
 
-  const handleCellSave = async (productKey, store, field) => {
+  const handleCellSave = async (productKey, store, field, newValue) => {
     try {
       if (field === 'price') {
-        const price = parseFloat(editValue);
+        const price = parseFloat(newValue);
         if (isNaN(price) || price <= 0) {
-          alert('Please enter a valid price');
-          return;
+          throw new Error('Please enter a valid price');
         }
 
         const unit = products[productKey]?.prices[store]?.unit || 'item';
@@ -216,7 +440,19 @@ const InventoryPage = ({ adminPassword }) => {
             store,
             productName: productKey,
             price: price,
-            unit: editValue
+            unit: newValue
+          })
+        });
+      } else if (field === 'displayName') {
+        await fetch(`${API_URL}/api/manual/update-product-info`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-password': adminPassword
+          },
+          body: JSON.stringify({
+            productKey: productKey,
+            displayName: newValue
           })
         });
       }
@@ -224,19 +460,41 @@ const InventoryPage = ({ adminPassword }) => {
       await fetchInventory();
     } catch (error) {
       console.error('Error updating:', error);
-      alert('Error updating product');
+      throw error;
     }
-    
-    setEditingCell(null);
-    setEditValue('');
   };
 
-  const handleKeyPress = (e, productKey, store, field) => {
-    if (e.key === 'Enter') {
-      handleCellSave(productKey, store, field);
-    } else if (e.key === 'Escape') {
-      setEditingCell(null);
-      setEditValue('');
+  const handleQuickPriceAdd = (productKey, store) => {
+    const product = products[productKey];
+    setQuickPriceModal({
+      productKey,
+      store,
+      productName: product?.displayName || productKey,
+      currentPrice: product?.prices?.[store]?.price,
+      currentUnit: product?.prices?.[store]?.unit || 'item'
+    });
+  };
+
+  const handleQuickPriceSave = async (price, unit) => {
+    try {
+      await fetch(`${API_URL}/api/manual/add-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword
+        },
+        body: JSON.stringify({
+          store: quickPriceModal.store,
+          productName: quickPriceModal.productKey,
+          price: price,
+          unit: unit
+        })
+      });
+      await fetchInventory();
+      setQuickPriceModal(null);
+    } catch (error) {
+      console.error('Error saving price:', error);
+      throw error;
     }
   };
 
@@ -256,20 +514,42 @@ const InventoryPage = ({ adminPassword }) => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
           <h2 className="text-xl font-bold">Inventory Management</h2>
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                  viewMode === 'table' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                📊 Table
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                  viewMode === 'cards' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                📱 Cards
+              </button>
+            </div>
             <input
               type="text"
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md"
+              className="px-3 py-2 border border-gray-300 rounded-md w-full sm:w-64"
             />
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md"
+              className="px-3 py-2 border border-gray-300 rounded-md w-full sm:w-auto"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -279,93 +559,157 @@ const InventoryPage = ({ adminPassword }) => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                {Object.keys(stores).map(store => (
-                  <th key={store} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {store}
-                  </th>
+        {viewMode === 'table' ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  {Object.keys(stores).map(store => (
+                    <th key={store} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {store}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredProducts.map(([key, product]) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-4 py-4">
+                      <div className="space-y-1">
+                        <InlineEditableCell
+                          value={product.displayName}
+                          onSave={(newValue) => handleCellSave(key, null, 'displayName', newValue)}
+                          type="text"
+                          placeholder="Tap to edit name"
+                          isEditing={editingCell === `${key}-displayName`}
+                          onStartEdit={() => handleCellEdit(key, null, 'displayName', product.displayName)}
+                          onCancelEdit={() => setEditingCell(null)}
+                          inputRef={inputRef}
+                        />
+                        <div className="text-xs text-gray-500">{key}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {product.category}
+                      </span>
+                    </td>
+                    {Object.keys(stores).map(store => {
+                      const storePrice = product.prices?.[store];
+                      return (
+                        <td key={store} className="px-4 py-4 text-center">
+                          {storePrice ? (
+                            <div className="space-y-1">
+                              <InlineEditableCell
+                                value={`£${storePrice.price}`}
+                                onSave={(newValue) => handleCellSave(key, store, 'price', newValue.replace('£', ''))}
+                                type="number"
+                                placeholder="Tap to edit price"
+                                isEditing={editingCell === `${key}-${store}-price`}
+                                onStartEdit={() => handleCellEdit(key, store, 'price', storePrice.price)}
+                                onCancelEdit={() => setEditingCell(null)}
+                                inputRef={inputRef}
+                                className="text-sm font-medium text-green-600"
+                              />
+                              <InlineEditableCell
+                                value={storePrice.unit}
+                                onSave={(newValue) => handleCellSave(key, store, 'unit', newValue)}
+                                type="text"
+                                placeholder="Tap to edit unit"
+                                isEditing={editingCell === `${key}-${store}-unit`}
+                                onStartEdit={() => handleCellEdit(key, store, 'unit', storePrice.unit)}
+                                onCancelEdit={() => setEditingCell(null)}
+                                inputRef={inputRef}
+                                className="text-xs text-gray-500"
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleQuickPriceAdd(key, store)}
+                              className="w-full min-h-[44px] text-xs text-blue-600 hover:text-blue-800 border-2 border-dashed border-blue-300 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                            >
+                              + Add Price
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProducts.map(([key, product]) => (
-                <tr key={key} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{product.displayName}</div>
-                      <div className="text-sm text-gray-500">{key}</div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {product.category}
-                    </span>
-                  </td>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProducts.map(([key, product]) => (
+              <div key={key} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="mb-3">
+                  <InlineEditableCell
+                    value={product.displayName}
+                    onSave={(newValue) => handleCellSave(key, null, 'displayName', newValue)}
+                    type="text"
+                    placeholder="Tap to edit name"
+                    isEditing={editingCell === `${key}-displayName`}
+                    onStartEdit={() => handleCellEdit(key, null, 'displayName', product.displayName)}
+                    onCancelEdit={() => setEditingCell(null)}
+                    inputRef={inputRef}
+                    className="text-lg font-semibold"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">{key}</div>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-2">
+                    {product.category}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
                   {Object.keys(stores).map(store => {
                     const storePrice = product.prices?.[store];
                     return (
-                      <td key={store} className="px-4 py-4 text-center">
+                      <div key={store} className="border border-gray-200 rounded-lg p-3">
+                        <div className="text-xs font-medium text-gray-600 mb-2">{store}</div>
                         {storePrice ? (
                           <div className="space-y-1">
-                            <div 
-                              className="cursor-pointer hover:bg-yellow-100 px-2 py-1 rounded"
-                              onClick={() => handleCellEdit(key, store, 'price', storePrice.price)}
-                            >
-                              {editingCell === `${key}-${store}-price` ? (
-                                <input
-                                  ref={inputRef}
-                                  type="number"
-                                  step="0.01"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleCellSave(key, store, 'price')}
-                                  onKeyDown={(e) => handleKeyPress(e, key, store, 'price')}
-                                  className="w-16 px-1 py-0.5 text-sm border rounded text-center"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium text-green-600">£{storePrice.price}</span>
-                              )}
-                            </div>
-                            <div 
-                              className="cursor-pointer hover:bg-yellow-100 px-2 py-1 rounded"
-                              onClick={() => handleCellEdit(key, store, 'unit', storePrice.unit)}
-                            >
-                              {editingCell === `${key}-${store}-unit` ? (
-                                <input
-                                  ref={inputRef}
-                                  type="text"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleCellSave(key, store, 'unit')}
-                                  onKeyDown={(e) => handleKeyPress(e, key, store, 'unit')}
-                                  className="w-16 px-1 py-0.5 text-xs border rounded text-center"
-                                />
-                              ) : (
-                                <span className="text-xs text-gray-500">{storePrice.unit}</span>
-                              )}
-                            </div>
+                            <InlineEditableCell
+                              value={`£${storePrice.price}`}
+                              onSave={(newValue) => handleCellSave(key, store, 'price', newValue.replace('£', ''))}
+                              type="number"
+                              placeholder="Tap to edit"
+                              isEditing={editingCell === `${key}-${store}-price`}
+                              onStartEdit={() => handleCellEdit(key, store, 'price', storePrice.price)}
+                              onCancelEdit={() => setEditingCell(null)}
+                              inputRef={inputRef}
+                              className="text-sm font-bold text-green-600"
+                            />
+                            <InlineEditableCell
+                              value={storePrice.unit}
+                              onSave={(newValue) => handleCellSave(key, store, 'unit', newValue)}
+                              type="text"
+                              placeholder="Tap to edit"
+                              isEditing={editingCell === `${key}-${store}-unit`}
+                              onStartEdit={() => handleCellEdit(key, store, 'unit', storePrice.unit)}
+                              onCancelEdit={() => setEditingCell(null)}
+                              inputRef={inputRef}
+                              className="text-xs text-gray-500"
+                            />
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleCellEdit(key, store, 'price', '')}
-                            className="text-xs text-blue-600 hover:text-blue-800 border border-dashed border-blue-300 px-2 py-1 rounded"
+                            onClick={() => handleQuickPriceAdd(key, store)}
+                            className="w-full min-h-[44px] bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
                           >
-                            + Add Price
+                            Add Price
                           </button>
                         )}
-                      </td>
+                      </div>
                     );
                   })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         
         {filteredProducts.length === 0 && (
           <div className="text-center py-8 text-gray-500">
@@ -373,6 +717,19 @@ const InventoryPage = ({ adminPassword }) => {
           </div>
         )}
       </div>
+
+      {/* Quick Price Modal */}
+      {quickPriceModal && (
+        <QuickPriceModal
+          isOpen={!!quickPriceModal}
+          onClose={() => setQuickPriceModal(null)}
+          onSave={handleQuickPriceSave}
+          productName={quickPriceModal.productName}
+          storeName={quickPriceModal.store}
+          currentPrice={quickPriceModal.currentPrice}
+          currentUnit={quickPriceModal.currentUnit}
+        />
+      )}
     </div>
   );
 };
@@ -477,7 +834,7 @@ const AnalyticsPage = ({ adminPassword }) => {
   );
 };
 
-// Page 3: Simple Product Addition (Mobile/Desktop Optimized)
+// Page 3: Enhanced Product Addition with Mobile-First Design
 const AddProductPage = ({ adminPassword }) => {
   const [stores] = useState(['B Kosher', 'Tapuach', 'Kosher Kingdom', 'Kays']);
   const [productName, setProductName] = useState('');
@@ -486,10 +843,52 @@ const AddProductPage = ({ adminPassword }) => {
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const categories = [
     'dairy', 'meat', 'bakery', 'produce', 'pantry', 'beverages', 'frozen', 'uncategorized'
   ];
+
+  // Auto-complete suggestions based on existing products
+  const fetchSuggestions = async (query) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/api/manual/inventory`, {
+        headers: { 'x-admin-password': adminPassword }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        const productNames = Object.values(data.data.products)
+          .map(p => p.displayName)
+          .filter(name => name.toLowerCase().includes(query.toLowerCase()))
+          .slice(0, 5);
+        setSuggestions(productNames);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    }
+  };
+
+  const handleProductNameChange = (value) => {
+    setProductName(value);
+    setErrors(prev => ({ ...prev, productName: null }));
+    fetchSuggestions(value);
+    setShowSuggestions(true);
+  };
+
+  const selectSuggestion = (suggestion) => {
+    setProductName(suggestion);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   const handlePriceChange = (store, field, value) => {
     setPrices(prev => ({
@@ -501,11 +900,43 @@ const AddProductPage = ({ adminPassword }) => {
     }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!productName.trim()) {
+      newErrors.productName = 'Product name is required';
+    }
+    
+    const storesToUpdate = Object.entries(prices).filter(([store, data]) => 
+      data?.price && parseFloat(data.price) > 0
+    );
+    
+    if (storesToUpdate.length === 0) {
+      newErrors.prices = 'At least one store must have a price';
+    }
+    
+    // Validate individual prices
+    Object.entries(prices).forEach(([store, data]) => {
+      if (data?.price) {
+        const price = parseFloat(data.price);
+        if (isNaN(price) || price <= 0) {
+          newErrors[`${store}_price`] = 'Invalid price';
+        }
+      }
+    });
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSingleProductAdd = async (e) => {
     e.preventDefault();
-    if (!productName.trim()) return;
+    
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setSuccessMessage('');
+    
     try {
       const storesToUpdate = Object.entries(prices).filter(([store, data]) => 
         data?.price && parseFloat(data.price) > 0
@@ -530,10 +961,14 @@ const AddProductPage = ({ adminPassword }) => {
       // Reset form
       setProductName('');
       setPrices({});
-      alert('Product added successfully!');
+      setErrors({});
+      setSuccessMessage(`✅ Product "${productName.trim()}" added successfully to ${storesToUpdate.length} store(s)!`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Error adding product:', error);
-      alert('Error adding product');
+      setErrors({ submit: 'Error adding product. Please try again.' });
     }
     setIsSubmitting(false);
   };
@@ -588,22 +1023,22 @@ const AddProductPage = ({ adminPassword }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
           <h2 className="text-xl font-bold">Add Products</h2>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 w-full sm:w-auto">
             <button
               onClick={() => setBulkMode(false)}
-              className={`px-4 py-2 rounded-md transition ${
-                !bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-md transition text-sm font-medium ${
+                !bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               Single Product
             </button>
             <button
               onClick={() => setBulkMode(true)}
-              className={`px-4 py-2 rounded-md transition ${
-                bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-md transition text-sm font-medium ${
+                bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               Bulk Import
@@ -611,20 +1046,57 @@ const AddProductPage = ({ adminPassword }) => {
           </div>
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errors.submit && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+            {errors.submit}
+          </div>
+        )}
+
         {!bulkMode ? (
           <form onSubmit={handleSingleProductAdd} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Product Name *
                 </label>
                 <input
                   type="text"
                   value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => handleProductNameChange(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg ${
+                    errors.productName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter product name..."
                   required
                 />
+                {errors.productName && (
+                  <p className="text-red-500 text-xs mt-1">{errors.productName}</p>
+                )}
+                
+                {/* Auto-complete suggestions */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => selectSuggestion(suggestion)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -633,7 +1105,7 @@ const AddProductPage = ({ adminPassword }) => {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
                 >
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -642,37 +1114,70 @@ const AddProductPage = ({ adminPassword }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {stores.map(store => (
-                <div key={store} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-3">{store}</h3>
-                  <div className="space-y-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Price (£)"
-                      value={prices[store]?.price || ''}
-                      onChange={(e) => handlePriceChange(store, 'price', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Unit (e.g., kg, pack)"
-                      value={prices[store]?.unit || ''}
-                      onChange={(e) => handlePriceChange(store, 'unit', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-                    />
+                <div key={store} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-medium text-gray-900 mb-3 text-sm">{store}</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Price (£)"
+                        value={prices[store]?.price || ''}
+                        onChange={(e) => handlePriceChange(store, 'price', e.target.value)}
+                        className={`w-full px-3 py-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors[`${store}_price`] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        inputMode="decimal"
+                      />
+                      {errors[`${store}_price`] && (
+                        <p className="text-red-500 text-xs mt-1">{errors[`${store}_price`]}</p>
+                      )}
+                    </div>
+                    <div>
+                      <select
+                        value={prices[store]?.unit || 'item'}
+                        onChange={(e) => handlePriceChange(store, 'unit', e.target.value)}
+                        className="w-full px-3 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="item">item</option>
+                        <option value="kg">kg</option>
+                        <option value="500g">500g</option>
+                        <option value="lb">lb</option>
+                        <option value="litre">litre</option>
+                        <option value="2 pints">2 pints</option>
+                        <option value="pint">pint</option>
+                        <option value="dozen">dozen</option>
+                        <option value="pack">pack</option>
+                        <option value="loaf">loaf</option>
+                        <option value="bottle">bottle</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
 
+            {errors.prices && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+                {errors.prices}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isSubmitting || !productName.trim()}
-              className="w-full md:w-auto px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition"
+              className="w-full px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition text-lg font-medium min-h-[48px]"
             >
-              {isSubmitting ? 'Adding Product...' : 'Add Product'}
+              {isSubmitting ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Adding Product...</span>
+                </div>
+              ) : (
+                'Add Product'
+              )}
             </button>
           </form>
         ) : (

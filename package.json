@@ -1,0 +1,70 @@
+{
+  "name": "shopstation-admin-ui",
+  "version": "1.0.0",
+  "description": "ShopStation Admin UI with comprehensive testing suite",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:auth": "./scripts/quick-test.sh auth",
+    "test:mobile": "./scripts/quick-test.sh mobile",
+    "test:inline": "./scripts/quick-test.sh inline",
+    "test:security": "./scripts/quick-test.sh security",
+    "test:performance": "./scripts/quick-test.sh performance",
+    "test:all": "./scripts/run-tests.sh",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "test:integration": "cd backend && npm test -- tests/integration.test.js",
+    "test:e2e": "cd backend && npm test -- tests/e2e-workflows.test.js",
+    "test:verbose": "VERBOSE_TESTS=true jest --verbose",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:update-snapshots": "jest --updateSnapshot",
+    "test:clear-cache": "jest --clearCache",
+    "test:help": "echo 'Available test commands:' && echo '  npm test              - Run all tests' && echo '  npm run test:auth     - Run authentication tests' && echo '  npm run test:mobile   - Run mobile tests' && echo '  npm run test:inline   - Run inline editing tests' && echo '  npm run test:security - Run security tests' && echo '  npm run test:performance - Run performance tests' && echo '  npm run test:all      - Run comprehensive test suite' && echo '  npm run test:backend  - Run backend tests only' && echo '  npm run test:frontend - Run frontend tests only' && echo '  npm run test:integration - Run integration tests' && echo '  npm run test:e2e      - Run end-to-end tests' && echo '  npm run test:coverage - Run tests with coverage' && echo '  npm run test:watch    - Run tests in watch mode' && echo '  npm run test:verbose  - Run tests with verbose output' && echo '  npm run test:ci       - Run tests for CI/CD' && echo '  npm run test:debug    - Run tests in debug mode'"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-sonar-reporter": "^2.0.0",
+    "babel-jest": "^29.7.0",
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-react": "^7.22.0"
+  },
+  "jest": {
+    "projects": [
+      {
+        "displayName": "backend",
+        "testMatch": ["<rootDir>/backend/tests/**/*.test.js"],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "frontend", 
+        "testMatch": ["<rootDir>/frontend/src/tests/**/*.test.js"],
+        "testEnvironment": "jsdom"
+      }
+    ]
+  },
+  "babel": {
+    "presets": [
+      ["@babel/preset-env", { "targets": { "node": "current" } }],
+      ["@babel/preset-react", { "runtime": "automatic" }]
+    ]
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "shopstation",
+    "admin",
+    "ui",
+    "testing",
+    "jest",
+    "react",
+    "nodejs"
+  ],
+  "author": "ShopStation Team",
+  "license": "MIT"
+}

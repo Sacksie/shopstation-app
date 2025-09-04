@@ -3,11 +3,14 @@ import config from '../config/environments';
 
 const API_URL = config.api.baseUrl;
 
-// Authentication Component
+// Authentication Component with PIN support
 const AdminAuth = ({ onAuthenticated }) => {
   const [password, setPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState('');
+  const [pinAttempts, setPinAttempts] = useState(0);
+  const [showFailsafe, setShowFailsafe] = useState(false);
+  const [inputType, setInputType] = useState('password');
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -25,8 +28,21 @@ const AdminAuth = ({ onAuthenticated }) => {
 
       if (response.ok) {
         onAuthenticated(password);
+        setPinAttempts(0);
+        setShowFailsafe(false);
       } else if (response.status === 401) {
-        setError('Invalid admin password. Please try again.');
+        // Check if it's a PIN attempt
+        if (password.length === 6 && /^\d+$/.test(password)) {
+          setPinAttempts(prev => prev + 1);
+          if (pinAttempts >= 1) {
+            setShowFailsafe(true);
+            setError('PIN failed twice. Use failsafe password: test123');
+          } else {
+            setError('Invalid PIN. Try again or use failsafe password after 2 attempts.');
+          }
+        } else {
+          setError('Invalid PIN or password. Please try again.');
+        }
       } else {
         setError('Connection error. Please check your internet and try again.');
       }
@@ -37,6 +53,18 @@ const AdminAuth = ({ onAuthenticated }) => {
     }
   };
 
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    // Auto-detect if it's a PIN (6 digits) and switch input type
+    if (value.length === 6 && /^\d+$/.test(value)) {
+      setInputType('text');
+    } else if (value.length > 6 || !/^\d+$/.test(value)) {
+      setInputType('password');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -44,34 +72,50 @@ const AdminAuth = ({ onAuthenticated }) => {
           <div className="text-center mb-6">
             <div className="text-4xl mb-4">🔒</div>
             <h2 className="text-2xl font-bold text-gray-900">Admin Access</h2>
-            <p className="text-gray-600 mt-2">Enter your admin password to continue</p>
+            <p className="text-gray-600 mt-2">Enter your PIN or password to continue</p>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admin Password
+                {password.length === 6 && /^\d+$/.test(password) ? 'PIN' : 'PIN or Password'}
               </label>
               <input
-                type="password"
+                type={inputType}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter admin password"
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg font-mono"
+                placeholder={password.length === 6 && /^\d+$/.test(password) ? "••••••" : "Enter PIN or password"}
                 required
+                autoComplete="off"
               />
+              {password.length === 6 && /^\d+$/.test(password) && (
+                <p className="text-xs text-gray-500 mt-1 text-center">PIN detected</p>
+              )}
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
+            {showFailsafe && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+                <div className="font-medium mb-1">🔑 Failsafe Access</div>
+                <div>After 2 failed PIN attempts, use: <code className="bg-yellow-100 px-1 rounded">test123</code></div>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
+              <div className="font-medium mb-1">📱 Valid PINs:</div>
+              <div className="font-mono">050625 • 331919</div>
+            </div>
+
             <button
               type="submit"
               disabled={isAuthenticating}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-colors min-h-[48px]"
             >
               {isAuthenticating ? 'Authenticating...' : 'Access Admin Panel'}
             </button>
