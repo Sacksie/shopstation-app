@@ -14,6 +14,9 @@ const { cloudBackup } = require('./utils/cloudBackup');
 // Initialize database connection
 const database = require('./database/db-connection');
 
+// Railway deployment system
+const { RailwayDeployment } = require('./scripts/railway-deployment');
+
 const app = express();
 const PORT = config.port;
 
@@ -201,6 +204,24 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     console.log('ℹ️  Server will continue with JSON database fallback');
+  }
+
+  // Railway deployment system - automatic migration on first deploy
+  if (process.env.RAILWAY_ENVIRONMENT === 'production' && process.env.DATABASE_URL) {
+    console.log('🚂 Railway deployment detected - checking migration status...');
+    setTimeout(async () => {
+      try {
+        const deployment = new RailwayDeployment();
+        const result = await deployment.deploy();
+        if (result.success) {
+          console.log('✅ Railway deployment completed successfully');
+        } else {
+          console.error('❌ Railway deployment failed:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ Railway deployment error:', error.message);
+      }
+    }, 3000); // Wait 3 seconds for database to be ready
   }
   
   // Initialize automatic backup system

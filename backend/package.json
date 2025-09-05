@@ -22,7 +22,10 @@
     "deploy:migration": "node scripts/deployment-safety.js migration",
     "deploy:hotfix": "node scripts/deployment-safety.js hotfix",
     "migrate:postgres": "node scripts/migrate-to-postgres.js",
-    "prepare-migration": "node scripts/prepare-migration.js"
+    "migrate:production": "node scripts/production-migration.js",
+    "prepare-migration": "node scripts/prepare-migration.js",
+    "check:railway-postgres": "node scripts/check-railway-postgres.js",
+    "deploy:complete": "npm run prepare-migration && npm run migrate:production"
   },
   "engines": {
     "node": ">=16.0.0"
