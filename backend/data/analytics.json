@@ -295,6 +295,21 @@
       "cheapestStore": null,
       "mostExpensiveStore": null,
       "day": "2025-09-03"
+    },
+    {
+      "timestamp": "2025-09-05T12:18:01.908Z",
+      "userId": "user_3c2a34d1",
+      "items": [
+        "milk",
+        "challah"
+      ],
+      "matchedItems": 2,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 4.1,
+      "cheapestStore": "Kosher Kingdom",
+      "mostExpensiveStore": "Tapuach",
+      "day": "2025-09-05"
     }
   ],
   "shopSelections": [
@@ -331,6 +346,9 @@
       "user_552bc463",
       "user_552bc47a",
       "user_552bc47c"
+    ],
+    "2025-09-05": [
+      "user_3c2a34d1"
     ]
   }
 }
