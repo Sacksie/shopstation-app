@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const dbOperations = require('../database/db-operations');
 
+// Test route to verify the router is working
+router.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Products router is working' });
+});
+
 /**
  * Products API - Provides product data for enhanced matching
  * Used by the frontend for smart product search and suggestions
@@ -9,45 +14,12 @@ const dbOperations = require('../database/db-operations');
 
 // Get all products with enhanced data
 router.get('/', async (req, res) => {
+  console.log('=== PRODUCTS ROUTE CALLED ===');
   try {
-    let products;
-    
-    if (dbOperations.usePostgreSQL) {
-      // PostgreSQL implementation
-      const query = `
-        SELECT 
-          p.id,
-          p.name,
-          p.category_name,
-          p.description,
-          p.synonyms,
-          p.common_brands,
-          p.dietary_info,
-          p.created_at,
-          p.updated_at
-        FROM products p
-        ORDER BY p.name ASC
-      `;
-      const result = await dbOperations.query(query);
-      products = result.rows;
-    } else {
-      // JSON fallback for development
-      const data = await dbOperations.readJSONData();
-      products = data.products || [];
-      
-      // Ensure all products have the required fields
-      products = products.map(product => ({
-        id: product.id || Date.now().toString(),
-        name: product.name || product.product_name || 'Unknown Product',
-        category_name: product.category_name || product.category || 'General',
-        description: product.description || '',
-        synonyms: product.synonyms || [],
-        common_brands: product.common_brands || [],
-        dietary_info: product.dietary_info || {},
-        created_at: product.created_at || new Date().toISOString(),
-        updated_at: product.updated_at || new Date().toISOString()
-      }));
-    }
+    console.log('Products route: Starting to fetch products...');
+    // Use the new database operations
+    const products = await dbOperations.getProducts();
+    console.log('Products route: Successfully fetched', products.length, 'products');
 
     res.json({
       success: true,

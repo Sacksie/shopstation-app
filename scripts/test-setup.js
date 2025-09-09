@@ -30,10 +30,10 @@ module.exports = async () => {
   
   // Suppress console output during tests unless verbose
   if (!process.env.VERBOSE_TESTS) {
-    console.log = jest.fn();
-    console.error = jest.fn();
-    console.warn = jest.fn();
-    console.info = jest.fn();
+    console.log = () => {};
+    console.error = () => {};
+    console.warn = () => {};
+    console.info = () => {};
   }
   
   console.log('✅ Test environment setup complete');

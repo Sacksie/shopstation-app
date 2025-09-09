@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testExecutions version="1">
+  <file path="/Users/gavrielsacks/grocery-compare-app/backend/tests/unit/backupManager.test.js">
+    <testCase name="Backup Manager getBackupList should return list of SQL backup files" duration="150"/>
+    <testCase name="Backup Manager getBackupList should return empty array if no backups exist" duration="0"/>
+    <testCase name="Backup Manager getRecentBackups should return only the 5 most recent backups" duration="1"/>
+    <testCase name="Backup Manager manualBackup should create a manual backup successfully" duration="74"/>
+    <testCase name="Backup Manager manualBackup should handle backup creation failure" duration="49"/>
+    <testCase name="Backup Manager manualBackup should handle missing database configuration" duration="2"/>
+    <testCase name="Backup Manager restoreFromBackup should restore from backup successfully" duration="67"/>
+    <testCase name="Backup Manager restoreFromBackup should handle restore failure" duration="18"/>
+    <testCase name="Backup Manager restoreFromBackup should handle missing backup file" duration="1"/>
+    <testCase name="Backup Manager restoreFromBackup should handle missing database configuration" duration="2"/>
+    <testCase name="Backup Manager setupAutomaticBackups should set up automatic backup scheduling" duration="19"/>
+  </file>
+  <file path="/Users/gavrielsacks/grocery-compare-app/backend/tests/unit/db-operations.test.js">
+    <testCase name="Database Operations createStoreUser should create a new store user with hashed password" duration="137"/>
+    <testCase name="Database Operations findStoreUserByEmail should find a user by email" duration="1"/>
+    <testCase name="Database Operations findStoreUserByEmail should return undefined if user not found" duration="0"/>
+    <testCase name="Database Operations getStores should return all active stores" duration="2"/>
+    <testCase name="Database Operations getProducts should return all products with prices" duration="1"/>
+    <testCase name="Database Operations searchProducts should search products by name" duration="1"/>
+    <testCase name="Database Operations addProduct should add a new product" duration="1"/>
+    <testCase name="Database Operations updateProductPrice should update product price for a store" duration="1"/>
+    <testCase name="Database Operations updateProductPrice should throw error if product or store not found" duration="56"/>
+    <testCase name="Database Operations updateStoreProductPrice should update store product price" duration="6"/>
+    <testCase name="Database Operations updateStoreProductPrice should throw error if product not found" duration="2"/>
+    <testCase name="Database Operations deleteProduct should soft delete a product" duration="3"/>
+    <testCase name="Database Operations addProductRequest should add a product request" duration="1"/>
+    <testCase name="Database Operations getProductRequests should return all product requests" duration="1"/>
+  </file>
+</testExecutions>

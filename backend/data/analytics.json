@@ -310,6 +310,202 @@
       "cheapestStore": "Kosher Kingdom",
       "mostExpensiveStore": "Tapuach",
       "day": "2025-09-05"
+    },
+    {
+      "timestamp": "2025-09-09T10:50:59.286Z",
+      "userId": "user_6d7e4c22",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:50:59.325Z",
+      "userId": "user_4b7217ee",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:51:48.053Z",
+      "userId": "user_6d7e4c21",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:51:48.220Z",
+      "userId": "user_4b7217ed",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:53:24.835Z",
+      "userId": "user_6d7e4c1f",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:53:25.021Z",
+      "userId": "user_4b7217eb",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:56:10.084Z",
+      "userId": "user_6d7e4c1c",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:56:10.279Z",
+      "userId": "user_4b7217e8",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:57:32.402Z",
+      "userId": "user_6d7e4c1b",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:57:32.583Z",
+      "userId": "user_4b7217e7",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:58:55.049Z",
+      "userId": "user_6d7e4c1a",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:58:55.306Z",
+      "userId": "user_4b7217e6",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T11:01:01.240Z",
+      "userId": "user_6d7dd85d",
+      "items": [
+        "milk"
+      ],
+      "matchedItems": 1,
+      "unmatchedItems": [],
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T11:01:01.527Z",
+      "userId": "user_4b71a429",
+      "items": [
+        "nonexistent-product-xyz"
+      ],
+      "matchedItems": 0,
+      "unmatchedItems": 1,
+      "storesCompared": 4,
+      "savings": 0,
+      "cheapestStore": null,
+      "mostExpensiveStore": null,
+      "day": "2025-09-09"
     }
   ],
   "shopSelections": [
@@ -349,6 +545,87 @@
     ],
     "2025-09-05": [
       "user_3c2a34d1"
+    ],
+    "2025-09-09": [
+      "user_6d7e4c22",
+      "user_4b7217ee",
+      "user_6d7e4c21",
+      "user_4b7217ed",
+      "user_6d7e4c1f",
+      "user_4b7217eb",
+      "user_6d7e4c1c",
+      "user_4b7217e8",
+      "user_6d7e4c1b",
+      "user_4b7217e7",
+      "user_6d7e4c1a",
+      "user_4b7217e6",
+      "user_6d7dd85d",
+      "user_4b71a429"
     ]
-  }
+  },
+  "errors": [
+    {
+      "timestamp": "2025-09-09T10:51:01.160Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:51:49.891Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:53:26.334Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:56:11.932Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:57:34.402Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T10:58:56.301Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    },
+    {
+      "timestamp": "2025-09-09T11:01:03.713Z",
+      "error": "Database connection failed",
+      "stack": "Error: Database connection failed\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/backend/tests/integration.test.js:404:15)\n    at /Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:397:39\n    at Object.<anonymous> (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:404:13)\n    at Object.mockConstructor [as readDB] (/Users/gavrielsacks/grocery-compare-app/node_modules/jest-mock/build/index.js:148:19)\n    at EnhancedFuzzyMatcher.readDB [as matchGroceryList] (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:367:25)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/utils/enhancedFuzzyMatch.js:482:48)\n    at matchGroceryList (/Users/gavrielsacks/grocery-compare-app/backend/routes/compare.js:115:33)",
+      "context": {
+        "type": "COMPARE_API_ERROR"
+      },
+      "day": "2025-09-09"
+    }
+  ]
 }

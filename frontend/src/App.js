@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReceiptUpload from './components/ReceiptUpload';
-import GroceryAdminPanel from './components/GroceryAdminPanel';
+// Keep old admin panel for master access
+import GroceryAdminPanel from './components/GroceryAdminPanel'; 
 import AnalyticsPage from './components/AnalyticsPage';
 import CookieConsent from './components/CookieConsent';
 import LegalPages from './components/LegalPages';
@@ -8,13 +9,17 @@ import ProductRequestModal from './components/ProductRequestModal';
 import EnhancedProductMatching from './components/EnhancedProductMatching';
 import ShoppingList from './components/ShoppingList';
 import StorePortalDemo from './components/StorePortalDemo';
+import StorePortal from './components/StorePortal';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 import NewShopstationLogo from './NewShopstationLogo.png';
 import config from './config/environments';
+import ComprehensiveAdminPanel from './components/ComprehensiveAdminPanel';
 
 const API_URL = config.api.baseUrl;
 
-// Main shopping list page
-const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }) => {
+// Main shopping list page (remains largely the same)
+const MainPage = ({ setCurrentPage, showStorePortalDemo, setShowStorePortalDemo }) => {
   const [groceryList, setGroceryList] = useState('');
   const [results, setResults] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -449,10 +454,15 @@ const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }
 
   // Show admin panel if requested
   if (showAdmin) {
-    return <GroceryAdminPanel onBack={() => {
-      setShowAdmin(false);
-      onAdminToggle(false);
-    }} />;
+    // return <GroceryAdminPanel onBack={() => {
+    //   setShowAdmin(false);
+    //   onAdminToggle(false);
+    // }} />;
+    return (
+      <ProtectedRoute>
+        <StorePortal />
+      </ProtectedRoute>
+    ); // Render the new StorePortal with authentication
   }
 
   // Show analytics page if requested
@@ -724,16 +734,19 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
           </div>
         </div>
         
-        {/* Discrete Admin Link */}
-        <div className="text-center mt-8">
+        {/* UPDATED: Two distinct buttons for admin access */}
+        <div className="text-center mt-8 space-x-4">
           <button
-            onClick={() => {
-              setShowAdmin(true);
-              onAdminToggle(true);
-            }}
+            onClick={() => setCurrentPage('admin')}
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline"
           >
-            Admin Access
+            Master Admin Access
+          </button>
+          <button
+            onClick={() => setCurrentPage('portal')}
+            className="text-xs text-purple-500 hover:text-purple-700 transition-colors underline"
+          >
+            Store Portal Login
           </button>
         </div>
 
@@ -1514,104 +1527,109 @@ const FeedbackModal = ({ isOpen, onClose }) => {
   );
 };
 
-// Main App
+// Main App with new Router implementation
 const App = () => {
+  const [currentPage, setCurrentPage] = useState('main'); // 'main', 'admin', 'portal'
   const [showLegalPages, setShowLegalPages] = useState(false);
   const [legalPageType, setLegalPageType] = useState('privacy');
-  const [showAdmin, setShowAdmin] = useState(false);
   const [showStorePortalDemo, setShowStorePortalDemo] = useState(false);
 
   const openLegalPage = (pageType) => {
     setLegalPageType(pageType);
     setShowLegalPages(true);
   };
+  
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'admin':
+        return <ComprehensiveAdminPanel onBack={() => setCurrentPage('main')} />;
+      case 'portal':
+        // No longer a protected route
+        return <StorePortal />;
+      case 'main':
+      default:
+        return (
+          <MainPage 
+            setCurrentPage={setCurrentPage}
+            showStorePortalDemo={showStorePortalDemo}
+            setShowStorePortalDemo={setShowStorePortalDemo}
+          />
+        );
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1">
-        <MainPage 
-          onAdminToggle={setShowAdmin} 
-          showStorePortalDemo={showStorePortalDemo}
-          setShowStorePortalDemo={setShowStorePortalDemo}
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1">
+          {renderPage()}
+        </div>
+      
+        {currentPage === 'main' && (
+          <footer className="bg-gray-50 border-t border-gray-200 py-8 px-4">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">ShopStation</h3>
+                  <p className="text-sm text-gray-600">
+                    Smart grocery price comparison for the kosher community.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Links</h3>
+                  <ul className="space-y-3 text-sm text-gray-700">
+                    <li><a href="/" className="hover:underline">Home</a></li>
+                    <li><a href="/about" className="hover:underline">About</a></li>
+                    <li><a href="/privacy" className="hover:underline">Privacy Policy</a></li>
+                    <li><a href="/terms" className="hover:underline">Terms of Service</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Contact Us</h3>
+                  <p className="text-sm text-gray-600">
+                    Email: info@shopstation.com
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Phone: +44 7123 456789
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Follow Us</h3>
+                  <div className="flex space-x-4 text-gray-600 text-lg">
+                    <a href="https://twitter.com/ShopStation" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                      🐦
+                    </a>
+                    <a href="https://www.facebook.com/ShopStation" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                      👥
+                    </a>
+                    <a href="https://www.instagram.com/ShopStation" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                      📸
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-12 text-center text-sm text-gray-600">
+                © {new Date().getFullYear()} ShopStation. All rights reserved.
+              </div>
+            </div>
+          </footer>
+        )}
+
+        <CookieConsent />
+        
+        {showLegalPages && (
+          <LegalPages
+            onClose={() => setShowLegalPages(false)}
+            initialPage={legalPageType}
+          />
+        )}
+
+        <StorePortalDemo
+          isOpen={showStorePortalDemo}
+          onClose={() => setShowStorePortalDemo(false)}
         />
       </div>
-      
-      {/* Footer - Hidden in admin mode */}
-      {!showAdmin && (
-        <footer className="bg-gray-50 border-t border-gray-200 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-center md:text-left mb-4 md:mb-0">
-              <p className="text-gray-600 text-sm">
-                © {new Date().getFullYear()} ShopStation. All rights reserved.
-              </p>
-              <p className="text-gray-500 text-xs mt-1">
-                Helping London's kosher community save money since 2025
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap justify-center md:justify-end gap-4 text-sm">
-              <button
-                onClick={() => openLegalPage('privacy')}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Privacy Policy
-              </button>
-              <button
-                onClick={() => openLegalPage('terms')}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Terms of Service
-              </button>
-              <button
-                onClick={() => openLegalPage('disclaimer')}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Price Disclaimer
-              </button>
-              <button
-                onClick={() => openLegalPage('copyright')}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Copyright
-              </button>
-              <button
-                onClick={() => setShowStorePortalDemo(true)}
-                className="text-purple-600 hover:text-purple-800 hover:underline font-medium"
-              >
-                🏪 Store Portal Demo
-              </button>
-            </div>
-          </div>
-          
-          {/* Price Disclaimer in Footer */}
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-xs text-center">
-              ⚠️ <strong>Important:</strong> All prices are estimates and may not reflect current store prices. 
-              Always verify prices in-store before purchasing.
-            </p>
-          </div>
-        </div>
-        </footer>
-      )}
-
-      {/* Legal Pages Modal */}
-      {showLegalPages && (
-        <LegalPages
-          onClose={() => setShowLegalPages(false)}
-          initialPage={legalPageType}
-        />
-      )}
-
-      {/* Cookie Consent Banner */}
-      <CookieConsent />
-
-      {/* Store Portal Demo Modal */}
-      <StorePortalDemo
-        isOpen={showStorePortalDemo}
-        onClose={() => setShowStorePortalDemo(false)}
-      />
-    </div>
+    </AuthProvider>
   );
 };
 

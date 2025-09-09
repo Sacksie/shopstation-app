@@ -10,7 +10,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { readDB, writeDB } = require('../database/kosher-db');
+const database = require('../database/db-connection');
 const { cloudBackup } = require('../utils/cloudBackup');
 const config = require('../config/environments');
 

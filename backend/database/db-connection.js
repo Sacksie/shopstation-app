@@ -162,6 +162,26 @@ class DatabaseManager {
   isAvailable() {
     return this.isConnected && this.pool;
   }
+
+  /**
+   * Get parsed database configuration
+   */
+  getDbConfig() {
+    const url = require('url');
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return null;
+    
+    const dbParams = url.parse(dbUrl);
+    const [user, password] = dbParams.auth.split(':');
+
+    return {
+      user,
+      password,
+      host: dbParams.hostname,
+      port: dbParams.port,
+      database: dbParams.pathname.split('/')[1]
+    };
+  }
 }
 
 // Create singleton instance

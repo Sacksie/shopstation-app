@@ -1,5 +1,5 @@
 const stringSimilarity = require('string-similarity');
-const db = require('../database/kosher-db');
+const dbOps = require('../database/db-operations');
 const analytics = require('./analytics');
 
 class EnhancedFuzzyMatcher {
@@ -228,11 +228,15 @@ class EnhancedFuzzyMatcher {
   }
 
   // Multi-level matching system
-  findBestMatch(query, database = null) {
+  async findBestMatch(query, database = null) {
     if (!database) {
-      const dbData = db.readDB();
-      database = dbData.products;
-      console.log('Available products:', Object.keys(database));
+      try {
+        database = await dbOps.getProducts();
+        console.log('Available products:', database.length);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        database = [];
+      }
     }
 
     const originalQuery = query;
@@ -357,17 +361,17 @@ class EnhancedFuzzyMatcher {
   }
 
   // Process grocery list with enhanced matching
-  matchGroceryList(items) {
+  async matchGroceryList(items) {
     const results = {
       matched: [],
       unmatched: [],
       matchDetails: [] // For analytics and debugging
     };
 
-    const database = db.readDB().products;
+    const database = await dbOps.getProducts();
 
     for (const item of items) {
-      const matchResult = this.findBestMatch(item, database);
+      const matchResult = await this.findBestMatch(item, database);
       
       if (matchResult && matchResult.confidence > 0.6) {
         results.matched.push({

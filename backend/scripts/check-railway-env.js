@@ -9,6 +9,9 @@
  * BUSINESS IMPACT: Prevents production deployments with insecure defaults
  */
 
+// Load environment variables from .env file for development
+require('dotenv').config();
+
 const requiredEnvVars = {
   NODE_ENV: {
     description: 'Application environment',
@@ -80,7 +83,13 @@ if (hasErrors) {
   console.error('4. Add the missing/invalid environment variables shown above');
   console.error('5. Railway will automatically redeploy');
   console.error('\n🔐 SECURITY: This validation prevents insecure production deployments');
-  process.exit(1);
+  
+  // Only exit if in production, otherwise just warn
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  } else {
+    console.warn('\n⚠️  WARNING: Running with insecure development settings. DO NOT use in production.');
+  }
 } else {
   console.log('✅ All environment variables properly configured');
   console.log('🚀 Deployment can proceed safely');

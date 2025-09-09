@@ -68,6 +68,7 @@ const gdprRoutes = require('./routes/gdpr');
 const productRequestRoutes = require('./routes/product-requests');
 const productRoutes = require('./routes/products');
 const portalRoutes = require('./routes/portal'); // Import the new portal routes
+const adminRoutes = require('./routes/admin'); // Import the new admin routes
 
 // Use routes
 app.use('/api', compareRoutes);
@@ -78,6 +79,7 @@ app.use('/api/gdpr', gdprRoutes);
 app.use('/api/requests', productRequestRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/portal', portalRoutes); // Use the new portal routes
+app.use('/api/admin', adminRoutes); // Use the new admin routes
 
 // Enhanced health check with business monitoring
 app.get('/api/health', (req, res) => {
@@ -139,6 +141,27 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/system/status', (req, res) => {
   const health = monitor.getSystemHealth();
   res.json(health);
+});
+
+// Debug endpoint for database testing
+app.get('/api/debug/database', async (req, res) => {
+  try {
+    const dbOps = require('./database/db-operations');
+    const products = await dbOps.getProducts();
+    res.json({
+      success: true,
+      databaseConnected: true,
+      productCount: products.length,
+      products: products.slice(0, 3) // First 3 products for debugging
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      databaseConnected: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
 });
 
 app.get('/api/system/backups', async (req, res) => {

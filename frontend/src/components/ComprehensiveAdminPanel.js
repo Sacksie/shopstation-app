@@ -3,121 +3,10 @@ import config from '../config/environments';
 
 const API_URL = config.api.baseUrl;
 
-const ComprehensiveAdminPanel = () => {
+const ComprehensiveAdminPanel = ({ onBack }) => { // onBack is now a prop to return
   const [activeTab, setActiveTab] = useState('inventory');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [authError, setAuthError] = useState('');
 
-  // Authentication Component with PIN support
-  const AuthScreen = () => {
-    const [pinAttempts, setPinAttempts] = useState(0);
-    const [showFailsafe, setShowFailsafe] = useState(false);
-    const [inputType, setInputType] = useState('password');
-
-    const handleAuth = async (e) => {
-      e.preventDefault();
-      setAuthError('');
-      
-      try {
-        const response = await fetch(`${API_URL}/api/manual/inventory`, {
-          headers: { 'x-admin-password': adminPassword }
-        });
-        
-        if (response.ok) {
-          setIsAuthenticated(true);
-          setAuthError('');
-          setPinAttempts(0);
-          setShowFailsafe(false);
-        } else {
-          // Check if it's a PIN attempt
-          if (adminPassword.length === 6 && /^\d+$/.test(adminPassword)) {
-            setPinAttempts(prev => prev + 1);
-            if (pinAttempts >= 1) {
-              setShowFailsafe(true);
-              setAuthError('PIN failed twice. Use failsafe password: test123');
-            } else {
-              setAuthError('Invalid PIN. Try again or use failsafe password after 2 attempts.');
-            }
-          } else {
-            setAuthError('Invalid PIN or password');
-          }
-        }
-      } catch (error) {
-        setAuthError('Connection error. Please check your internet connection.');
-      }
-    };
-
-    const handleInputChange = (e) => {
-      const value = e.target.value;
-      setAdminPassword(value);
-      
-      // Auto-detect if it's a PIN (6 digits) and switch input type
-      if (value.length === 6 && /^\d+$/.test(value)) {
-        setInputType('text');
-      } else if (value.length > 6 || !/^\d+$/.test(value)) {
-        setInputType('password');
-      }
-    };
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="text-4xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold text-gray-900">ShopStation Admin</h2>
-            <p className="text-gray-600 mt-2">Enter your PIN or password to continue</p>
-          </div>
-
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {adminPassword.length === 6 && /^\d+$/.test(adminPassword) ? 'PIN' : 'PIN or Password'}
-              </label>
-              <input
-                type={inputType}
-                value={adminPassword}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg font-mono"
-                placeholder={adminPassword.length === 6 && /^\d+$/.test(adminPassword) ? "••••••" : "Enter PIN or password"}
-                maxLength="50"
-                required
-                autoComplete="off"
-              />
-              {adminPassword.length === 6 && /^\d+$/.test(adminPassword) && (
-                <p className="text-xs text-gray-500 mt-1 text-center">PIN detected</p>
-              )}
-            </div>
-
-            {authError && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                {authError}
-              </div>
-            )}
-
-            {showFailsafe && (
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
-                <div className="font-medium mb-1">🔑 Failsafe Access</div>
-                <div>After 2 failed PIN attempts, use: <code className="bg-yellow-100 px-1 rounded">test123</code></div>
-              </div>
-            )}
-
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
-              <div className="font-medium mb-1">📱 Valid PINs:</div>
-              <div className="font-mono">050625 • 331919</div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors min-h-[48px]"
-            >
-              Access Admin Panel
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  };
+  // Authentication is removed. The panel is always visible.
 
   // Navigation Tabs
   const TabNavigation = () => {
@@ -155,10 +44,6 @@ const ComprehensiveAdminPanel = () => {
     );
   };
 
-  if (!isAuthenticated) {
-    return <AuthScreen />;
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="bg-white shadow-sm">
@@ -166,10 +51,10 @@ const ComprehensiveAdminPanel = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">ShopStation Admin Dashboard</h1>
             <button
-              onClick={() => setIsAuthenticated(false)}
+              onClick={onBack} // Use the onBack prop to go back to the main page
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
             >
-              Logout
+              ← Back to Main Page
             </button>
           </div>
         </div>
@@ -178,12 +63,12 @@ const ComprehensiveAdminPanel = () => {
       <TabNavigation />
       
       <div className="container mx-auto px-4 py-6">
-        {activeTab === 'inventory' && <InventoryPage adminPassword={adminPassword} />}
-        {activeTab === 'analytics' && <AnalyticsPage adminPassword={adminPassword} />}
-        {activeTab === 'add-product' && <AddProductPage adminPassword={adminPassword} />}
-        {activeTab === 'backup' && <BackupPage adminPassword={adminPassword} />}
-        {activeTab === 'settings' && <SettingsPage adminPassword={adminPassword} />}
-        {activeTab === 'monitoring' && <MonitoringPage adminPassword={adminPassword} />}
+        {activeTab === 'inventory' && <InventoryPage />}
+        {activeTab === 'analytics' && <AnalyticsPage />}
+        {activeTab === 'add-product' && <AddProductPage />}
+        {activeTab === 'backup' && <BackupPage />}
+        {activeTab === 'settings' && <SettingsPage />}
+        {activeTab === 'monitoring' && <MonitoringPage />}
       </div>
     </div>
   );
@@ -359,7 +244,7 @@ const QuickPriceModal = ({ isOpen, onClose, onSave, productName, storeName, curr
 };
 
 // Page 1: Inventory Management with Enhanced Mobile-First Inline Editing
-const InventoryPage = ({ adminPassword }) => {
+const InventoryPage = () => {
   const [products, setProducts] = useState({});
   const [stores, setStores] = useState({});
   const [editingCell, setEditingCell] = useState(null);
@@ -373,9 +258,7 @@ const InventoryPage = ({ adminPassword }) => {
 
   const fetchInventory = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/manual/inventory`, {
-        headers: { 'x-admin-password': adminPassword }
-      });
+      const response = await fetch(`${API_URL}/api/manual/inventory`);
       const data = await response.json();
       
       if (data.success) {
@@ -386,7 +269,7 @@ const InventoryPage = ({ adminPassword }) => {
       console.error('Error fetching inventory:', error);
     }
     setLoading(false);
-  }, [adminPassword]);
+  }, []);
 
   useEffect(() => {
     fetchInventory();
@@ -406,6 +289,7 @@ const InventoryPage = ({ adminPassword }) => {
 
   const handleCellSave = async (productKey, store, field, newValue) => {
     try {
+      let response;
       if (field === 'price') {
         const price = parseFloat(newValue);
         if (isNaN(price) || price <= 0) {
@@ -414,11 +298,10 @@ const InventoryPage = ({ adminPassword }) => {
 
         const unit = products[productKey]?.prices[store]?.unit || 'item';
         
-        await fetch(`${API_URL}/api/manual/add-price`, {
+        response = await fetch(`${API_URL}/api/manual/add-price`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': adminPassword
           },
           body: JSON.stringify({
             store,
@@ -430,11 +313,10 @@ const InventoryPage = ({ adminPassword }) => {
       } else if (field === 'unit') {
         const price = products[productKey]?.prices[store]?.price || 0;
         
-        await fetch(`${API_URL}/api/manual/add-price`, {
+        response = await fetch(`${API_URL}/api/manual/add-price`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': adminPassword
           },
           body: JSON.stringify({
             store,
@@ -444,17 +326,21 @@ const InventoryPage = ({ adminPassword }) => {
           })
         });
       } else if (field === 'displayName') {
-        await fetch(`${API_URL}/api/manual/update-product-info`, {
+        response = await fetch(`${API_URL}/api/manual/update-product-info`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': adminPassword
           },
           body: JSON.stringify({
             productKey: productKey,
             displayName: newValue
           })
         });
+      }
+
+      if (response && !response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update. Status: ${response.status}`);
       }
 
       await fetchInventory();
@@ -477,11 +363,10 @@ const InventoryPage = ({ adminPassword }) => {
 
   const handleQuickPriceSave = async (price, unit) => {
     try {
-      await fetch(`${API_URL}/api/manual/add-price`, {
+      const response = await fetch(`${API_URL}/api/manual/add-price`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': adminPassword
         },
         body: JSON.stringify({
           store: quickPriceModal.store,
@@ -490,6 +375,12 @@ const InventoryPage = ({ adminPassword }) => {
           unit: unit
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to save price. Status: ${response.status}`);
+      }
+
       await fetchInventory();
       setQuickPriceModal(null);
     } catch (error) {
@@ -735,7 +626,7 @@ const InventoryPage = ({ adminPassword }) => {
 };
 
 // Page 2: Analytics Dashboard
-const AnalyticsPage = ({ adminPassword }) => {
+const AnalyticsPage = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('7');
@@ -743,9 +634,7 @@ const AnalyticsPage = ({ adminPassword }) => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/analytics?days=${timeframe}`, {
-          headers: { 'x-admin-password': adminPassword }
-        });
+        const response = await fetch(`${API_URL}/api/analytics?days=${timeframe}`);
         const data = await response.json();
         setAnalytics(data);
       } catch (error) {
@@ -755,7 +644,7 @@ const AnalyticsPage = ({ adminPassword }) => {
     };
 
     fetchAnalytics();
-  }, [timeframe, adminPassword]);
+  }, [timeframe]);
 
   if (loading) {
     return <div className="text-center py-8">Loading analytics...</div>;
@@ -835,7 +724,7 @@ const AnalyticsPage = ({ adminPassword }) => {
 };
 
 // Page 3: Enhanced Product Addition with Mobile-First Design
-const AddProductPage = ({ adminPassword }) => {
+const AddProductPage = () => {
   const [stores] = useState(['B Kosher', 'Tapuach', 'Kosher Kingdom', 'Kays']);
   const [productName, setProductName] = useState('');
   const [category, setCategory] = useState('uncategorized');
@@ -860,9 +749,7 @@ const AddProductPage = ({ adminPassword }) => {
     }
     
     try {
-      const response = await fetch(`${API_URL}/api/manual/inventory`, {
-        headers: { 'x-admin-password': adminPassword }
-      });
+      const response = await fetch(`${API_URL}/api/manual/inventory`);
       const data = await response.json();
       
       if (data.success) {
@@ -943,11 +830,10 @@ const AddProductPage = ({ adminPassword }) => {
       );
 
       for (const [store, data] of storesToUpdate) {
-        await fetch(`${API_URL}/api/manual/add-price`, {
+        const response = await fetch(`${API_URL}/api/manual/add-price`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-password': adminPassword
           },
           body: JSON.stringify({
             store,
@@ -956,6 +842,11 @@ const AddProductPage = ({ adminPassword }) => {
             unit: data.unit || 'item'
           })
         });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to add price for ${store}: ${errorData.error || response.statusText}`);
+        }
       }
 
       // Reset form
@@ -968,7 +859,7 @@ const AddProductPage = ({ adminPassword }) => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Error adding product:', error);
-      setErrors({ submit: 'Error adding product. Please try again.' });
+      setErrors({ submit: error.message || 'Error adding product. Please try again.' });
     }
     setIsSubmitting(false);
   };
@@ -977,6 +868,8 @@ const AddProductPage = ({ adminPassword }) => {
     if (!bulkText.trim()) return;
 
     setIsSubmitting(true);
+    setSuccessMessage('');
+    setErrors({});
     try {
       const lines = bulkText.trim().split('\n').filter(line => line.trim());
       const products = [];
@@ -996,11 +889,10 @@ const AddProductPage = ({ adminPassword }) => {
 
       for (const product of products) {
         if (product.name && product.store && product.price > 0) {
-          await fetch(`${API_URL}/api/manual/add-price`, {
+          const response = await fetch(`${API_URL}/api/manual/add-price`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-admin-password': adminPassword
             },
             body: JSON.stringify({
               store: product.store,
@@ -1009,14 +901,20 @@ const AddProductPage = ({ adminPassword }) => {
               unit: product.unit
             })
           });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Failed to import ${product.name}: ${errorData.error || response.statusText}`);
+          }
         }
       }
 
       setBulkText('');
-      alert(`Added ${products.length} products successfully!`);
+      setSuccessMessage(`✅ Imported ${products.length} products successfully!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Error bulk adding:', error);
-      alert('Error adding products');
+      setErrors({ submit: error.message || 'An error occurred during bulk import.' });
     }
     setIsSubmitting(false);
   };
@@ -1211,43 +1109,82 @@ Eggs, Kosher Kingdom, 3.10, dozen"
 };
 
 // Page 4: Backup & Restore System
-const BackupPage = ({ adminPassword }) => {
+const BackupPage = () => {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [migrationStatus, setMigrationStatus] = useState({ running: false, output: '', error: '' });
 
   const fetchBackups = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/backup/status`, {
-        headers: { 'x-admin-password': adminPassword }
-      });
+      const response = await fetch(`${API_URL}/api/backup/status`);
       const data = await response.json();
       setBackups(data.backups || []);
     } catch (error) {
       console.error('Error fetching backups:', error);
     }
     setLoading(false);
-  }, [adminPassword]);
+  }, []);
 
   useEffect(() => {
     fetchBackups();
   }, [fetchBackups]);
 
-  const createBackup = async () => {
+  const runMigration = async () => {
+    if (!window.confirm('Are you sure you want to migrate your JSON data to PostgreSQL? This can be run multiple times safely, but can take a moment.')) {
+      return;
+    }
+
+    setMigrationStatus({ running: true, output: 'Starting migration...', error: '' });
+
     try {
-      await fetch(`${API_URL}/api/backup/create`, {
+      const response = await fetch(`${API_URL}/api/admin/migrate-to-pg`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': adminPassword
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMigrationStatus({ running: false, output: data.output, error: '' });
+      } else {
+        const errorMsg = data.stderr || data.error || 'Unknown error occurred.';
+        setMigrationStatus({ running: false, output: data.output, error: errorMsg });
+      }
+
+    } catch (error) {
+      console.error('Error migrating data:', error);
+      setMigrationStatus({ running: false, output: '', error: 'A network or server error occurred.' });
+    }
+  };
+
+  const createBackup = async () => {
+    setIsCreating(true);
+    setNotification({ message: '', type: '' });
+    try {
+      const response = await fetch(`${API_URL}/api/backup/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ reason: 'manual-admin-panel' })
       });
-      alert('Backup created successfully!');
-      fetchBackups();
+      const data = await response.json();
+      if (response.ok) {
+        setNotification({ message: 'Backup created successfully!', type: 'success' });
+        fetchBackups();
+      } else {
+        setNotification({ message: data.error || 'Failed to create backup.', type: 'error' });
+      }
     } catch (error) {
       console.error('Error creating backup:', error);
-      alert('Error creating backup');
+      setNotification({ message: 'An unexpected error occurred.', type: 'error' });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -1256,26 +1193,30 @@ const BackupPage = ({ adminPassword }) => {
       return;
     }
 
+    setIsRestoring(true);
+    setNotification({ message: '', type: '' });
     try {
       const latestBackup = backups[0];
       const response = await fetch(`${API_URL}/api/backup/restore`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': adminPassword
         },
         body: JSON.stringify({ filename: latestBackup.filename })
       });
 
       if (response.ok) {
-        alert('Latest backup restored successfully!');
-        window.location.reload();
+        setNotification({ message: 'Latest backup restored successfully! The page will now reload.', type: 'success' });
+        setTimeout(() => window.location.reload(), 2000);
       } else {
-        alert('Error restoring backup');
+        const data = await response.json();
+        setNotification({ message: data.error || 'Failed to restore backup.', type: 'error' });
       }
     } catch (error) {
       console.error('Error restoring backup:', error);
-      alert('Error restoring backup');
+      setNotification({ message: 'An unexpected error occurred.', type: 'error' });
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -1288,31 +1229,81 @@ const BackupPage = ({ adminPassword }) => {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold mb-6">Backup & Restore</h2>
 
+        {notification.message && (
+          <div className={`mb-6 p-4 rounded-md text-sm ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {notification.message}
+          </div>
+        )}
+
+        <div className="border border-yellow-300 bg-yellow-50 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-yellow-800 mb-2">🚀 Upgrade to PostgreSQL</h3>
+          <p className="text-sm text-yellow-700 mb-4">
+            Your application is ready to be fully migrated to a professional PostgreSQL database. 
+            Click the button below to copy all product and price data from the old JSON file into the new database.
+            This will ensure all your data is saved reliably.
+          </p>
+          <button
+            onClick={runMigration}
+            disabled={migrationStatus.running}
+            className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-50 transition font-semibold"
+          >
+            {migrationStatus.running ? 'Migrating...' : 'Migrate JSON data to PostgreSQL'}
+          </button>
+          
+          {(migrationStatus.output || migrationStatus.error) && (
+            <div className="mt-4 p-3 bg-gray-800 text-white rounded-md font-mono text-xs max-h-60 overflow-y-auto">
+              <pre>{migrationStatus.output}</pre>
+              {migrationStatus.error && <pre className="text-red-400">{migrationStatus.error}</pre>}
+            </div>
+          )}
+        </div>
+
+        <h3 className="text-lg font-semibold mb-4">Legacy JSON Backups</h3>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <button
             onClick={createBackup}
-            className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2"
+            disabled={isCreating || isRestoring}
+            className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2 disabled:opacity-50"
           >
-            <span>💾</span>
-            <span>Create Manual Backup</span>
+            {isCreating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <span>💾</span>
+                <span>Create Manual Backup</span>
+              </>
+            )}
           </button>
           <button
             onClick={restoreLatestBackup}
-            disabled={backups.length === 0}
+            disabled={backups.length === 0 || isRestoring || isCreating}
             className="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center space-x-2"
           >
-            <span>🔄</span>
-            <span>Restore Latest</span>
+            {isRestoring ? (
+               <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Restoring...</span>
+              </>
+            ) : (
+              <>
+                <span>🔄</span>
+                <span>Restore Latest</span>
+              </>
+            )}
           </button>
-          <div className="flex items-center justify-center space-x-2 border border-gray-300 rounded-md px-4 py-3">
+          <div className="flex items-center justify-center space-x-2 border border-gray-200 rounded-md px-4 py-3 bg-gray-50 cursor-not-allowed" title="This feature is coming soon.">
             <input
               type="checkbox"
               id="autoBackup"
-              checked={autoBackupEnabled}
-              onChange={(e) => setAutoBackupEnabled(e.target.checked)}
-              className="rounded"
+              checked={false}
+              disabled
+              className="rounded cursor-not-allowed"
             />
-            <label htmlFor="autoBackup" className="text-sm">Auto-backup (4hrs)</label>
+            <label htmlFor="autoBackup" className="text-sm text-gray-500">Auto-backup (4hrs)</label>
           </div>
         </div>
 
@@ -1358,7 +1349,7 @@ const BackupPage = ({ adminPassword }) => {
 };
 
 // Page 5: Settings
-const SettingsPage = ({ adminPassword }) => {
+const SettingsPage = () => {
   const [settings, setSettings] = useState({
     autoBackupInterval: '4',
     maxBackupsToKeep: '10',
@@ -1467,7 +1458,7 @@ const SettingsPage = ({ adminPassword }) => {
 };
 
 // Page 6: System Health Monitoring
-const MonitoringPage = ({ adminPassword }) => {
+const MonitoringPage = () => {
   const [systemHealth, setSystemHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -1477,9 +1468,7 @@ const MonitoringPage = ({ adminPassword }) => {
         const healthResponse = await fetch(`${API_URL}/api/health`);
         const health = await healthResponse.json();
 
-        const inventoryResponse = await fetch(`${API_URL}/api/manual/inventory`, {
-          headers: { 'x-admin-password': adminPassword }
-        });
+        const inventoryResponse = await fetch(`${API_URL}/api/manual/inventory`);
         const inventory = await inventoryResponse.json();
 
         setSystemHealth({
@@ -1498,7 +1487,7 @@ const MonitoringPage = ({ adminPassword }) => {
     const interval = setInterval(fetchSystemHealth, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [adminPassword]);
+  }, []);
 
   if (loading) {
     return <div className="text-center py-8">Loading system health...</div>;
