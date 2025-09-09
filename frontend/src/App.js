@@ -472,32 +472,56 @@ const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }
 
   // Main landing page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {/* BETA Badge */}
-        <div className="fixed top-4 right-4 z-20">
-          <button
-            onClick={() => setShowFeedbackModal(true)}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 active:scale-95"
-          >
-            🚀 BETA - Help us improve!
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50 flex flex-col items-center justify-center p-4">
+      {/* BETA Badge */}
+      <div className="fixed top-4 right-4 z-20">
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 active:scale-95"
+        >
+          🚀 BETA - Help us improve!
+        </button>
+      </div>
 
-        {/* Debug Info (Development Only) */}
-        {config.features.debugMode && (
-          <div className="fixed top-4 left-4 z-20">
-            <div className="bg-black/80 text-white px-3 py-2 rounded text-xs font-mono backdrop-blur">
-              <div>🌍 {config.environment}</div>
-              <div>🔗 {API_URL}</div>
-              <div>📱 {window.location.hostname}</div>
-            </div>
+      {/* Debug Info (Development Only) */}
+      {config.features.debugMode && (
+        <div className="fixed top-4 left-4 z-20">
+          <div className="bg-black/80 text-white px-3 py-2 rounded text-xs font-mono backdrop-blur">
+            <div>🌍 {config.environment}</div>
+            <div>🔗 {API_URL}</div>
+            <div>📱 {window.location.hostname}</div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Main Content Container */}
+      <div className="w-full max-w-4xl flex flex-col items-center">
+        {/* Large Prominent Logo - Google Style */}
+        <div className="mb-8 flex flex-col items-center">
+          <div className="h-32 md:h-40 lg:h-48 mb-4">
+            <img 
+              src={NewShopstationLogo} 
+              alt="ShopStation" 
+              className="h-full w-auto object-contain drop-shadow-lg" 
+              onError={(e) => {
+                console.log('Logo failed to load, trying fallback');
+                e.target.src = "/ShopStationLogo.jpg";
+              }}
+            />
+          </div>
+          
+          {/* Tagline */}
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-700 text-center mb-2">
+            Smart Grocery Price Comparison
+          </h1>
+          <p className="text-lg text-gray-500 text-center max-w-2xl">
+            Compare prices across stores instantly. Just paste your shopping list and find the best deals.
+          </p>
+        </div>
 
         {/* Last Updated Info */}
         {lastUpdated && !isLoadingUpdate && (
-          <div className="text-center mb-4">
+          <div className="text-center mb-6">
             <div className="inline-flex items-center px-3 py-1 bg-white/80 backdrop-blur rounded-full border border-gray-200 text-sm text-gray-600">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
               Prices last updated: {formatLastUpdated(lastUpdated)}
@@ -507,7 +531,7 @@ const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }
 
         {/* Debug Test Button (Development Only) */}
         {config.features.debugMode && (
-          <div className="text-center mb-4">
+          <div className="text-center mb-6">
             <button
               onClick={async () => {
                 try {
@@ -529,50 +553,36 @@ const MainPage = ({ onAdminToggle, showStorePortalDemo, setShowStorePortalDemo }
         )}
 
         {/* Post-it Note Container */}
-        <div
-          className="relative"
-          style={{
-            transform: 'rotate(-0.5deg)',
-            filter: 'drop-shadow(8px 8px 20px rgba(0,0,0,0.15))'
-          }}
-        >
-          {/* Tape effect */}
-          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-32 h-8 bg-white opacity-60 rotate-3 rounded shadow-md"></div>
-          
-          <div className="bg-gradient-to-b from-yellow-50 to-amber-50 border-t-8 border-amber-400 rounded-sm shadow-inner"
-               style={{
-                 backgroundImage: 'linear-gradient(to bottom, #fefce8 0%, #fef3c7 100%)',
-                 borderTop: '8px solid #f59e0b'
-               }}>
-            {/* Header */}
-            <div className="px-6 pt-8 pb-6">
-              {/* Centered Logo */}
-              <div className="flex justify-center mb-4">
-                <div className="h-24">
-                  <img 
-                    src={NewShopstationLogo} 
-                    alt="ShopStation" 
-                    className="h-full w-auto object-contain" 
-                    onError={(e) => {
-                      console.log('Logo failed to load, trying fallback');
-                      e.target.src = "/ShopStationLogo.jpg";
-                    }}
-                  />
-                </div>
-              </div>
-              
-              {/* Smart List Detection Badge */}
-              {isFormattedList && (
-                <div className="flex justify-center">
-                  <div className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Smart list detected
+        <div className="w-full max-w-2xl">
+          <div
+            className="relative"
+            style={{
+              transform: 'rotate(-0.5deg)',
+              filter: 'drop-shadow(8px 8px 20px rgba(0,0,0,0.15))'
+            }}
+          >
+            {/* Tape effect */}
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-32 h-8 bg-white opacity-60 rotate-3 rounded shadow-md"></div>
+            
+            <div className="bg-gradient-to-b from-yellow-50 to-amber-50 border-t-8 border-amber-400 rounded-sm shadow-inner"
+                 style={{
+                   backgroundImage: 'linear-gradient(to bottom, #fefce8 0%, #fef3c7 100%)',
+                   borderTop: '8px solid #f59e0b'
+                 }}>
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4">
+                {/* Smart List Detection Badge */}
+                {isFormattedList && (
+                  <div className="flex justify-center mb-4">
+                    <div className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Smart list detected
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             
             {/* Divider */}
             <div className="px-6">
@@ -714,27 +724,17 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
           </div>
         </div>
         
-        {/* Tagline */}
+        {/* Discrete Admin Link */}
         <div className="text-center mt-8">
-          <p className="text-sm text-amber-700/60 font-medium">
-            Smart kosher grocery shopping, simplified
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Compare prices across London's top kosher stores
-          </p>
-          
-          {/* Discrete Admin Link */}
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                setShowAdmin(true);
-                onAdminToggle(true);
-              }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline"
-            >
-              Admin Access
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setShowAdmin(true);
+              onAdminToggle(true);
+            }}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline"
+          >
+            Admin Access
+          </button>
         </div>
 
         {/* Error Handling */}
@@ -854,9 +854,8 @@ disabled:cursor-not-allowed font-bold shadow-lg transform transition-all hover:s
             onListUpdate={handleShoppingListUpdate}
           />
         </div>
-
-
       </div>
+    </div>
 
       {/* Feedback Modal */}
       <FeedbackModal 
