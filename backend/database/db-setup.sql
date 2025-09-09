@@ -51,9 +51,19 @@ CREATE TABLE store_products (
     unit VARCHAR(50) NOT NULL, -- 2L, 500g, etc.
     in_stock BOOLEAN DEFAULT true,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_by VARCHAR(255), -- Who updated the price
-    
-    UNIQUE(store_id, product_id) -- Each store can only have one price per product
+    updated_by VARCHAR(100) -- Could be 'admin', 'store_owner', 'automation'
+);
+
+-- Store Users table: For store-specific logins
+CREATE TABLE store_users (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'staff', -- 'owner', 'manager', 'staff'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
 );
 
 -- Product Requests table: User requests for missing products
@@ -92,6 +102,15 @@ CREATE TABLE shopping_lists (
     is_favorite BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Search Analytics table: To track what users are searching for
+CREATE TABLE search_analytics (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    query VARCHAR(255) NOT NULL,
+    search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    results_count INTEGER
 );
 
 -- Indexes for performance

@@ -45,6 +45,19 @@ class DatabaseOperations {
     return bcrypt.compare(password, passwordHash);
   }
 
+  /**
+   * Create a new store
+   */
+  async createStore({ name, owner_email }) {
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const result = await database.query(`
+      INSERT INTO stores (name, slug, owner_email)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `, [name, slug, owner_email]);
+    return result.rows[0];
+  }
+
 
   /**
    * Get all stores

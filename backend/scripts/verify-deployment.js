@@ -93,7 +93,7 @@ class DeploymentVerification {
     try {
       // Test by checking if we get store data
       const response = await axios.get(`${this.baseUrl}/api/manual/inventory`, {
-        headers: { 'x-admin-password': 'Gavtalej22' },
+        headers: { 'x-admin-password': process.env.ADMIN_PASSWORD },
         timeout: 10000
       });
       
@@ -120,7 +120,7 @@ class DeploymentVerification {
     
     try {
       const response = await axios.get(`${this.baseUrl}/api/manual/inventory`, {
-        headers: { 'x-admin-password': 'Gavtalej22' },
+        headers: { 'x-admin-password': process.env.ADMIN_PASSWORD },
         timeout: 10000
       });
       
@@ -151,7 +151,7 @@ class DeploymentVerification {
     
     try {
       const response = await axios.get(`${this.baseUrl}/api/manual/inventory`, {
-        headers: { 'x-admin-password': 'Gavtalej22' },
+        headers: { 'x-admin-password': process.env.ADMIN_PASSWORD },
         timeout: 10000
       });
       
@@ -206,7 +206,7 @@ class DeploymentVerification {
     
     try {
       const response = await axios.get(`${this.baseUrl}/api/manual/inventory`, {
-        headers: { 'x-admin-password': 'Gavtalej22' },
+        headers: { 'x-admin-password': process.env.ADMIN_PASSWORD },
         timeout: 10000
       });
       

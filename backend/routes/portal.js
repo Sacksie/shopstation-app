@@ -58,58 +58,31 @@ const MOCK_DATA = {
 
 // 1. Store Owner Authentication
 router.post('/login', async (req, res) => {
-  const { password } = req.body;
+  const { email, password } = req.body;
 
-  // Simplified login for demo purposes
-  if (password === 'test123') {
-    try {
-      // For the demo, log in as a specific, known user to get a valid token
-      const demoUserEmail = 'owner@koshercorner.com';
-      const user = await dbOps.findStoreUserByEmail(demoUserEmail);
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+  }
 
-      if (user) {
-        const token = jwt.sign(
-          { userId: user.id, storeId: user.store_id, role: user.role },
-          process.env.JWT_SECRET,
-          { expiresIn: '8h' }
-        );
-        
-        // Omit password hash from user object sent to frontend
-        const { password_hash, ...userWithoutPassword } = user;
+  try {
+    const user = await dbOps.findStoreUserByEmail(email);
 
-        res.json({ success: true, token, user: userWithoutPassword });
-      } else {
-        // This case handles if the demo user hasn't been created yet
-        res.status(401).json({ success: false, message: 'Invalid credentials or demo user not found. Please run the user creation script.' });
-      }
-    } catch (error) {
-      console.error('Portal login error:', error);
-      res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    if (user && await dbOps.verifyUserPassword(password, user.password_hash)) {
+      const token = jwt.sign(
+        { userId: user.id, storeId: user.store_id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '8h' }
+      );
+      
+      const { password_hash, ...userWithoutPassword } = user;
+
+      res.json({ success: true, token, user: userWithoutPassword });
+    } else {
+      res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
-  } else {
-    // Keep the original logic as a fallback, but the primary demo path is the one above.
-    const { email } = req.body; // In a real scenario, you'd still have the email.
-    if (!email) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-    
-    try {
-      const user = await dbOps.findStoreUserByEmail(email);
-      if (user && await dbOps.verifyUserPassword(password, user.password_hash)) {
-        const token = jwt.sign(
-          { userId: user.id, storeId: user.store_id, role: user.role },
-          process.env.JWT_SECRET,
-          { expiresIn: '8h' }
-        );
-        const { password_hash, ...userWithoutPassword } = user;
-        res.json({ success: true, token, user: userWithoutPassword });
-      } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
-      }
-    } catch (error) {
-      console.error('Portal login error:', error);
-      res.status(500).json({ success: false, message: 'An internal server error occurred' });
-    }
+  } catch (error) {
+    console.error('Portal login error:', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 });
 

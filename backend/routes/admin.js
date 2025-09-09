@@ -1,12 +1,38 @@
 const express = require('express');
 const { execFile } = require('child_process');
 const path = require('path');
-const adminAuth = require('../adminAuth');
+const adminAuth = require('../middleware/adminAuth');
+const dbOps = require('../database/db-operations');
 
 const router = express.Router();
 
 // Middleware to protect all admin routes
 router.use(adminAuth);
+
+/**
+ * POST /api/admin/create-store
+ * 
+ * Creates a new store and a store owner user.
+ */
+router.post('/create-store', async (req, res) => {
+  const { storeName, ownerEmail, password } = req.body;
+
+  if (!storeName || !ownerEmail || !password) {
+    return res.status(400).json({ success: false, message: 'Store name, owner email, and password are required.' });
+  }
+
+  try {
+    // This would be a transaction in a real app
+    const newStore = await dbOps.createStore({ name: storeName, owner_email: ownerEmail });
+    const newUser = await dbOps.createStoreUser({ email: ownerEmail, password, storeId: newStore.id, role: 'owner' });
+
+    res.status(201).json({ success: true, store: newStore, user: newUser });
+  } catch (error) {
+    console.error('Error creating store:', error);
+    res.status(500).json({ success: false, message: 'Failed to create store.' });
+  }
+});
+
 
 /**
  * POST /api/admin/migrate-to-pg
