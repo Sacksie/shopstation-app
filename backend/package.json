@@ -9,6 +9,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:portal": "node scripts/test-portal-system.js",
+    "test:portal:unit": "node scripts/test-portal-system.js unit",
+    "test:portal:integration": "node scripts/test-portal-system.js integration",
+    "test:portal:security": "node scripts/test-portal-system.js security",
+    "test:portal:coverage": "node scripts/test-portal-system.js coverage",
     "dev": "NODE_ENV=development node server.js",
     "check-env": "node scripts/check-railway-env.js",
     "migrate": "node scripts/migrate.js migrate",
@@ -26,7 +31,12 @@
     "prepare-migration": "node scripts/prepare-migration.js",
     "check:railway-postgres": "node scripts/check-railway-postgres.js",
     "verify:deployment": "node scripts/verify-deployment.js",
-    "deploy:complete": "npm run prepare-migration && npm run migrate:production"
+    "deploy:complete": "npm run prepare-migration && npm run migrate:production",
+    "portal:create-users": "node scripts/create-test-store-users.js create",
+    "portal:list-users": "node scripts/create-test-store-users.js list",
+    "portal:delete-users": "node scripts/create-test-store-users.js delete",
+    "portal:apply-migrations": "node scripts/apply-sql-migrations.js",
+    "setup:dev-db": "node scripts/setup-dev-database.js"
   },
   "engines": {
     "node": ">=16.0.0"

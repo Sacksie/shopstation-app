@@ -8,6 +8,7 @@
  * - Automatic reconnection handling
  */
 
+require('dotenv').config();
 const { Pool } = require('pg');
 const config = require('../config/environments');
 

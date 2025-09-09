@@ -67,6 +67,7 @@ const backupRoutes = require('./routes/backup');
 const gdprRoutes = require('./routes/gdpr');
 const productRequestRoutes = require('./routes/product-requests');
 const productRoutes = require('./routes/products');
+const portalRoutes = require('./routes/portal'); // Import the new portal routes
 
 // Use routes
 app.use('/api', compareRoutes);
@@ -76,6 +77,7 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/requests', productRequestRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/portal', portalRoutes); // Use the new portal routes
 
 // Enhanced health check with business monitoring
 app.get('/api/health', (req, res) => {

@@ -11,6 +11,7 @@
 const database = require('./db-connection');
 const fs = require('fs').promises;
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 class DatabaseOperations {
   constructor() {
@@ -30,6 +31,47 @@ class DatabaseOperations {
       console.log('ℹ️  Using JSON database (development mode)');
     }
   }
+
+  /**
+   * Create a new store user with a hashed password
+   */
+  async createStoreUser({ email, password, storeId, role = 'staff' }) {
+    if (!this.usePostgreSQL) {
+      console.warn('User creation is only supported in PostgreSQL mode.');
+      return null;
+    }
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    const result = await database.query(`
+      INSERT INTO store_users (email, password_hash, store_id, role)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, role, created_at
+    `, [email, passwordHash, storeId, role]);
+
+    return result.rows[0];
+  }
+
+  /**
+   * Find a store user by email
+   */
+  async findStoreUserByEmail(email) {
+    if (!this.usePostgreSQL) return null;
+
+    const result = await database.query(
+      'SELECT * FROM store_users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Verify a user's password
+   */
+  async verifyUserPassword(password, passwordHash) {
+    return bcrypt.compare(password, passwordHash);
+  }
+
 
   /**
    * Get all stores
@@ -52,6 +94,206 @@ class DatabaseOperations {
         hours: store.hours,
         rating: store.rating
       }));
+    }
+  }
+
+  /**
+   * Get all products for a specific store
+   */
+  async getProductsByStore(storeId) {
+    if (!this.usePostgreSQL) return [];
+
+    const result = await database.query(`
+      SELECT 
+        p.id,
+        p.name,
+        p.slug,
+        c.name as category_name,
+        sp.price,
+        sp.unit,
+        sp.in_stock
+      FROM products p
+      JOIN store_products sp ON p.id = sp.product_id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE sp.store_id = $1 AND p.is_active = true
+      ORDER BY p.name;
+    `, [storeId]);
+    return result.rows;
+  }
+
+  /**
+   * Get a competitive price report for a store
+   */
+  async getCompetitivePriceReport(storeId) {
+    if (!this.usePostgreSQL) return { keyItems: [] };
+
+    // This is a complex query that does the following:
+    // 1. Finds all products for the given store (s1).
+    // 2. For each of those products, it finds the prices at all *other* stores (s2).
+    // 3. It aggregates the competitor prices into a JSON object.
+    const result = await database.query(`
+      WITH my_store_products AS (
+        -- Select all products for the logged-in store
+        SELECT product_id, price
+        FROM store_products
+        WHERE store_id = $1
+      )
+      SELECT
+        p.id,
+        p.name,
+        c.name as category,
+        msp.price as "myPrice",
+        (
+          -- This subquery finds competitor prices for each product
+          SELECT json_object_agg(s.name, sp.price)
+          FROM store_products sp
+          JOIN stores s ON sp.store_id = s.id
+          WHERE sp.product_id = p.id AND sp.store_id != $1
+        ) as competitors
+      FROM products p
+      JOIN my_store_products msp ON p.id = msp.product_id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.is_active = true
+      ORDER BY p.name;
+    `, [storeId]);
+    
+    // The query returns competitors as a JSON object, which is exactly what the frontend needs.
+    // We filter out any items that don't have competitor prices for a cleaner report.
+    return { keyItems: result.rows.filter(row => row.competitors) };
+  }
+
+  /**
+   * Get a customer demand report for a store
+   */
+  async getCustomerDemandReport(storeId) {
+    if (!this.usePostgreSQL) {
+        return { topSearches: [], missedOpportunities: [], peakTimes: [] };
+    }
+
+    // This query is in two parts:
+    // 1. Get the top 10 most frequent search terms from the analytics table.
+    // 2. For each term, check if a product with a similar name exists for the given store.
+    const result = await database.query(`
+      WITH top_searches AS (
+        SELECT 
+          search_term,
+          SUM(search_count) as total_searches
+        FROM search_analytics
+        GROUP BY search_term
+        ORDER BY total_searches DESC
+        LIMIT 10
+      ),
+      store_products_normalized AS (
+        -- Get a list of all product names and synonyms for the current store
+        SELECT name, synonyms FROM products p
+        JOIN store_products sp ON p.id = sp.product_id
+        WHERE sp.store_id = $1
+      )
+      SELECT
+        ts.search_term,
+        ts.total_searches,
+        EXISTS (
+          -- Check if the search term matches any product name or synonym in the store
+          SELECT 1 FROM store_products_normalized
+          WHERE 
+            LOWER(ts.search_term) LIKE '%' || LOWER(name) || '%'
+            OR
+            EXISTS (
+              SELECT 1 FROM unnest(synonyms) as s WHERE LOWER(ts.search_term) LIKE '%' || LOWER(s) || '%'
+            )
+        ) as is_stocked
+      FROM top_searches ts;
+    `, [storeId]);
+    
+    const topSearches = [];
+    const missedOpportunities = [];
+
+    result.rows.forEach(row => {
+      const item = {
+        term: row.search_term,
+        searches: parseInt(row.total_searches, 10)
+      };
+      if (row.is_stocked) {
+        // Placeholder for conversion rate, as we don't track that yet
+        topSearches.push({ ...item, conversionRate: 0.65 }); 
+      } else {
+        missedOpportunities.push(item);
+      }
+    });
+
+    // Placeholder for peak times, as we don't have enough data to calculate this yet
+    const peakTimes = [
+      { day: 'Thursday', hour: '6 PM', activity: 95 },
+      { day: 'Friday', hour: '11 AM', activity: 88 },
+      { day: 'Sunday', hour: '2 PM', activity: 75 },
+    ];
+
+    return { topSearches, missedOpportunities, peakTimes };
+  }
+
+  /**
+   * Get dashboard summary data for a store
+   */
+  async getDashboardSummary(storeId) {
+    if (!this.usePostgreSQL) {
+      return {
+        storeName: 'Demo Store',
+        winsTracker: { newCustomers: 0, reason: 'No data available', period: 'this week' },
+        priceIntelligence: { cheapestItems: 0, mostExpensiveItems: 0 },
+        demandAnalytics: { topSearches: [], missedOpportunities: [] }
+      };
+    }
+
+    try {
+      // Get store name
+      const storeResult = await database.query('SELECT name FROM stores WHERE id = $1', [storeId]);
+      const storeName = storeResult.rows[0]?.name || 'Unknown Store';
+
+      // Get competitive price data
+      const priceReport = await this.getCompetitivePriceReport(storeId);
+      let cheapestItems = 0;
+      let mostExpensiveItems = 0;
+
+      priceReport.keyItems.forEach(item => {
+        const competitorPrices = Object.values(item.competitors || {});
+        if (competitorPrices.length > 0) {
+          const minPrice = Math.min(...competitorPrices);
+          const maxPrice = Math.max(...competitorPrices);
+          
+          if (item.myPrice < minPrice) {
+            cheapestItems++;
+          } else if (item.myPrice > maxPrice) {
+            mostExpensiveItems++;
+          }
+        }
+      });
+
+      // Get customer demand data
+      const demandReport = await this.getCustomerDemandReport(storeId);
+
+      // Calculate wins tracker (placeholder for now - this would need more complex analytics)
+      const winsTracker = {
+        newCustomers: Math.floor(Math.random() * 20) + 5, // Placeholder
+        reason: 'competitive pricing strategy',
+        period: 'this week'
+      };
+
+      return {
+        storeName,
+        winsTracker,
+        priceIntelligence: {
+          cheapestItems,
+          mostExpensiveItems
+        },
+        demandAnalytics: {
+          topSearches: demandReport.topSearches.slice(0, 3).map(item => item.term),
+          missedOpportunities: demandReport.missedOpportunities.slice(0, 2).map(item => item.term)
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating dashboard summary:', error);
+      throw error;
     }
   }
 
@@ -258,6 +500,28 @@ class DatabaseOperations {
       await this.writeJSONData(data);
       return { success: true };
     }
+  }
+
+  /**
+   * Update product price for a specific store and product ID
+   */
+  async updateStoreProductPrice(storeId, productId, newPrice) {
+    if (!this.usePostgreSQL) {
+      console.warn('Price updates are only supported in PostgreSQL mode.');
+      return { success: false, error: 'PostgreSQL not connected' };
+    }
+    const result = await database.query(`
+      UPDATE store_products
+      SET price = $1, last_updated = NOW()
+      WHERE store_id = $2 AND product_id = $3
+      RETURNING store_id, product_id, price, last_updated;
+    `, [parseFloat(newPrice), storeId, productId]);
+
+    if (result.rowCount === 0) {
+      throw new Error('Product not found for this store, or price was not changed.');
+    }
+
+    return { success: true, updatedProduct: result.rows[0] };
   }
 
   /**
