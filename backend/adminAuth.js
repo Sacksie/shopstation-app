@@ -1,7 +1,7 @@
 const adminAuth = (req, res, next) => {
   // Valid PINs for admin access
   const VALID_PINS = ['050625', '331919'];
-  const FAILSAFE_PASSWORD = 'test123';
+  const FAILSAFE_PASSWORD = '331919';
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'temp-password-123';
   
   // Check for password/PIN in headers or body

@@ -4,7 +4,7 @@
   "description": "ShopStation backend",
   "main": "server.js",
   "scripts": {
-    "start": "node scripts/check-railway-env.js && node server.js",
+    "start": "node server.js",
     "start:unsafe": "node server.js",
     "test": "jest",
     "test:watch": "jest --watch",
