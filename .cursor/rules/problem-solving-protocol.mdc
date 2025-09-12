@@ -1,0 +1,12 @@
+---
+description:
+    When error occurs:
+1. Explain error in plain English
+2. Show exact breaking line
+3. Suggest 2–3 fixes
+4. Provide simplest fix
+5. Provide full corrected code
+6. Suggest preventive guardrail
+globs:
+alwaysApply: true
+---

@@ -1,0 +1,12 @@
+---
+description:
+users (id, email, name, postcode, created_at, role [user/store_admin])
+stores (id, name, logo_url, delivery_fee, minimum_order, is_independent)
+products (id, name, category, brand, size, unit, barcode)
+prices (id, product_id, store_id, price, currency, updated_at)
+shopping_lists (id, user_id, name, created_at)
+list_items (id, list_id, product_id, product_name, quantity)
+analytics_events (id, user_id, type, metadata, created_at)
+globs:
+alwaysApply: true
+---

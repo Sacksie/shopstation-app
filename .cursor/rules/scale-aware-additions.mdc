@@ -1,0 +1,13 @@
+---
+description:
+- Background jobs: Supabase Functions → later migrate to dedicated queue (e.g. BullMQ on Redis)
+- Caching: Edge functions + CDN for price queries
+- Analytics: PostHog (open-source analytics, privacy-first)
+- Monitoring: Sentry for error logging (free tier ok)
+- Testing: Playwright (E2E), Vitest (unit/integration)
+- Infrastructure as Code: Terraform templates for when scaling off Vercel
+globs:
+alwaysApply: true
+
+---
+

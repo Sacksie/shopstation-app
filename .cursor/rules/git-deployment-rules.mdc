@@ -1,0 +1,10 @@
+---
+description:
+    Branching: main (production), dev (staging)
+    Commit format: "Add/Fix/Update: [feature] - [details]"
+    Every commit → auto-deploy preview on Vercel
+    main branch → production deploy
+    Secrets: only in Vercel dashboard
+globs:
+alwaysApply: true
+---

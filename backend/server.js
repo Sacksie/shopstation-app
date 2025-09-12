@@ -3,6 +3,13 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// CRITICAL SECURITY CHECK for Admin Password
+if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'temp-password-123' || process.env.ADMIN_PASSWORD.length < 10)) {
+  console.error('FATAL ERROR: ADMIN_PASSWORD is not set, is insecure, or is too short.');
+  console.error('Please set a strong, unique ADMIN_PASSWORD in your .env file for production environments.');
+  process.exit(1); // Exit with failure code
+}
+
 // Load environment-specific configuration
 const config = require('./config/environments');
 

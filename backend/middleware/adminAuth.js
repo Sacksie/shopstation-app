@@ -1,44 +1,35 @@
 const adminAuth = (req, res, next) => {
-  // Valid PINs for admin access
-  const VALID_PINS = ['050625', '331919'];
-  const FAILSAFE_PASSWORD = '331919';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'temp-password-123';
-  
-  // Check for password/PIN in headers or body
-  const password = req.headers['x-admin-password'] || req.body.password;
-  
-  if (!password) {
-    return res.status(401).json({
-      error: 'Authentication required',
-      message: 'Please provide admin PIN or password'
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+  // CRITICAL: Ensure ADMIN_PASSWORD is set in production environments
+  if (process.env.NODE_ENV === 'production' && (!ADMIN_PASSWORD || ADMIN_PASSWORD === 'temp-password-123')) {
+    console.error('FATAL: ADMIN_PASSWORD is not set or is insecure. Server cannot start.');
+    return res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Admin authentication is not configured securely.'
     });
   }
   
-  // Check if it's a valid PIN
-  if (VALID_PINS.includes(password)) {
-    // PIN is valid, allow access
-    next();
-    return;
+  // Get password from headers or body
+  const providedPassword = req.headers['x-admin-password'] || req.body.password;
+  
+  if (!providedPassword) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      message: 'Please provide an admin password.'
+    });
   }
   
-  // Check if it's the failsafe password
-  if (password === FAILSAFE_PASSWORD) {
-    // Failsafe password is valid, allow access
+  // Securely compare the provided password with the environment variable
+  if (providedPassword === ADMIN_PASSWORD) {
     next();
-    return;
+  } else {
+    // Invalid credentials
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Invalid admin password.'
+    });
   }
-  
-  // Check if it's the legacy admin password (for backward compatibility)
-  if (password === ADMIN_PASSWORD) {
-    next();
-    return;
-  }
-  
-  // Invalid credentials
-  return res.status(401).json({
-    error: 'Unauthorized',
-    message: 'Invalid PIN or password'
-  });
 };
 
 module.exports = adminAuth;

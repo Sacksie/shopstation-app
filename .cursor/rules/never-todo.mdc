@@ -1,0 +1,10 @@
+---
+description:
+❌ Microservices too early
+❌ Kubernetes before team size > 10
+❌ Hand-rolled auth
+❌ Custom design systems before PMF
+❌ Paid enterprise SaaS until ROI is obvious
+globs:
+alwaysApply: true
+---

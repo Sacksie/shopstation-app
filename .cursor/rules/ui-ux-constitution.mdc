@@ -1,0 +1,13 @@
+---
+description:
+1. Mobile-first design ALWAYS.
+2. Core flow (compare prices) in ≤ 3 clicks.
+3. Loading skeletons > spinners.
+4. Never empty state → always seed placeholders.
+5. Validation must be inline, human-readable.
+6. Follow Skyscanner/Trivago UI flows for now (don’t reinvent).
+7. Accessibility: alt text on all images, focus states, ARIA labels.
+8. Keep visual identity consistent (Tailwind defaults → design tokens later).
+globs:
+alwaysApply: true
+---

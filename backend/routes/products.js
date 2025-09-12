@@ -1,11 +1,109 @@
 const express = require('express');
 const router = express.Router();
 const dbOperations = require('../database/db-operations');
+const multer = require('multer');
+const csv = require('csv-parser');
+const { Readable } = require('stream');
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Test route to verify the router is working
 router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Products router is working' });
 });
+
+/**
+ * POST /upload
+ * Handles CSV file upload for inventory import.
+ * This is a multi-stage process:
+ * 1. Receives the file and parses headers.
+ * 2. Returns headers to the client for column mapping.
+ * 3. Receives mapping and file again to process and import data.
+ */
+router.post('/upload', upload.single('inventoryFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded.' });
+    }
+
+    const { stage, mapping } = req.body;
+
+    // STAGE 1: Parse headers and send back for mapping
+    if (stage === 'parseHeaders') {
+      const headers = await getCsvHeaders(req.file.buffer);
+      return res.json({ success: true, headers });
+    }
+
+    // STAGE 2: Process the file with user-provided mapping
+    if (stage === 'processData') {
+      if (!mapping) {
+        return res.status(400).json({ success: false, error: 'Column mapping is required.' });
+      }
+
+      // In a real app, you would have a robust job queue for this.
+      // For now, we process it directly.
+      const results = await processCsvWithMapping(req.file.buffer, JSON.parse(mapping));
+
+      // Placeholder: In a real implementation, you'd save this to the database.
+      console.log('--- Imported Data ---');
+      console.log(results);
+      console.log('---------------------');
+      
+      return res.json({ 
+        success: true, 
+        message: 'Import successful!',
+        summary: {
+          totalRows: results.length,
+          // other stats can be added here
+        }
+      });
+    }
+    
+    return res.status(400).json({ success: false, error: 'Invalid stage provided.' });
+
+  } catch (error) {
+    console.error('Error processing inventory upload:', error);
+    res.status(500).json({ success: false, error: 'Failed to process file.' });
+  }
+});
+
+// Helper function to get CSV headers
+const getCsvHeaders = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const readableStream = Readable.from(buffer.toString());
+    readableStream
+      .pipe(csv())
+      .on('headers', (headers) => {
+        readableStream.destroy(); // Stop reading after headers are found
+        resolve(headers);
+      })
+      .on('error', (error) => reject(error));
+  });
+};
+
+// Helper function to process CSV with mapping
+const processCsvWithMapping = (buffer, mapping) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    const readableStream = Readable.from(buffer.toString());
+    
+    readableStream
+      .pipe(csv({
+        mapHeaders: ({ header }) => {
+          // Find the new header name from the mapping provided by the user
+          for (const key in mapping) {
+            if (mapping[key] === header) {
+              return key; // This is our internal field name (e.g., 'productName')
+            }
+          }
+          return null; // Ignore columns that are not mapped
+        }
+      }))
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', (error) => reject(error));
+  });
+};
 
 /**
  * Products API - Provides product data for enhanced matching

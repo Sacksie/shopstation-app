@@ -1,0 +1,7 @@
+---
+alwaysApply: false
+Phase 1: Manual seeding (spreadsheet → Supabase import)
+Phase 2: User-submitted prices (gamified “Submit Price”)
+Phase 3: Independent store dashboards
+Phase 4: Automated ingestion (scraping, APIs, receipts)
+---

@@ -58,6 +58,27 @@ class DatabaseOperations {
     return result.rows[0];
   }
 
+  /**
+   * Find a store by name
+   */
+  async findStoreByName(name) {
+    const result = await database.query(
+      'SELECT * FROM stores WHERE name = $1 OR slug = $1',
+      [name]
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Find a product by slug
+   */
+  async findProductBySlug(slug) {
+    const result = await database.query(
+      'SELECT * FROM products WHERE slug = $1 AND is_active = true',
+      [slug]
+    );
+    return result.rows[0];
+  }
 
   /**
    * Get all stores
@@ -398,9 +419,10 @@ class DatabaseOperations {
     const values = [];
     let paramIndex = 1;
 
-    if (updates.name || updates.displayName) {
+    // Correctly handle displayName or name
+    if (updates.displayName) {
       setClause.push(`name = $${paramIndex++}`);
-      values.push(updates.name || updates.displayName);
+      values.push(updates.displayName);
     }
     
     if (updates.synonyms) {
@@ -425,11 +447,15 @@ class DatabaseOperations {
     setClause.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(productSlug);
 
-    await database.query(`
+    const result = await database.query(`
       UPDATE products 
       SET ${setClause.join(', ')}
       WHERE slug = $${paramIndex}
     `, values);
+
+    if (result.rowCount === 0) {
+      return { success: false, error: 'Product not found or no changes made' };
+    }
 
     return { success: true };
   }

@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+Frontend: Next.js 14+ (App Router) → Vercel free tier
+Styling: Tailwind CSS ONLY (design system discipline)
+Backend: Supabase (DB, Auth, Realtime, Storage)
+Language: TypeScript (strict mode OFF initially, ON by Month 3)
+Package Manager: npm
+API: REST (GraphQL reserved for future data analytics)
+---
+
+
+

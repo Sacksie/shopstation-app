@@ -4,51 +4,75 @@ const dbOps = require('../database/db-operations');
 const adminAuth = require('../middleware/adminAuth');
 const backupManager = require('../utils/backupManager');
 
-// Add single price (for admin panel)
+const slugify = (text) => text.toLowerCase().replace(/\s+/g, '-');
+
+// Add single price (for admin panel) - REFACTORED
 router.post('/add-price', adminAuth, async (req, res) => {
   try {
     const { store, productName, price, unit } = req.body;
-    
+
     if (!store || !productName || !price || !unit) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide store, productName, price, and unit'
+        error: 'Please provide store, productName, price, and unit',
       });
     }
-    
-    const productSlug = productName.toLowerCase().replace(/\s+/g, '-');
-    let result;
-    
-    try {
-      result = await dbOps.updateProductPrice(productSlug, store, { 
-        price: parseFloat(price), 
-        unit, 
-        updatedBy: 'admin' 
+
+    const productSlug = slugify(productName);
+
+    // Step 1: Ensure the store exists
+    const storeExists = await dbOps.findStoreByName(store);
+    if (!storeExists) {
+      return res.status(404).json({
+        success: false,
+        error: `Store '${store}' not found. Please add it before setting prices.`,
       });
-    } catch (error) {
-      // Product might not exist, try to add it first
+    }
+
+    // Step 2: Find or create the product
+    let product = await dbOps.findProductBySlug(productSlug);
+    if (!product) {
       try {
-        await dbOps.addProduct({ name: productName, slug: productSlug });
-        result = await dbOps.updateProductPrice(productSlug, store, { 
-          price: parseFloat(price), 
-          unit, 
-          updatedBy: 'admin' 
+        const newProduct = await dbOps.addProduct({
+          name: productName,
+          slug: productSlug,
         });
+        product = newProduct;
+        console.log(`✅ New product created: ${productName}`);
       } catch (addError) {
-        result = { success: false };
+        console.error('Error creating new product:', addError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create the new product.',
+        });
       }
     }
-    
-    res.json({
-      success: result.success,
-      message: result.success ? `Price added: ${productName} - £${price} (${unit}) at ${store}` : 'Failed to add price'
+
+    // Step 3: Update the price for the product at the specified store
+    const result = await dbOps.updateProductPrice(productSlug, store, {
+      price: parseFloat(price),
+      unit,
+      updatedBy: 'admin',
     });
-    
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Price added: ${productName} - £${price} (${unit}) at ${store}`,
+      });
+    } else {
+      // This case should be rare now, but kept for safety
+      res.status(500).json({
+        success: false,
+        error: 'An unknown error occurred while updating the price.',
+      });
+    }
+
   } catch (error) {
-    console.error('Error adding price:', error);
+    console.error('Error in /add-price route:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to add price'
+      error: error.message || 'An internal server error occurred.',
     });
   }
 });
@@ -278,14 +302,14 @@ router.put('/update-product-info', adminAuth, async (req, res) => {
     
     if (!productKey) {
       return res.status(400).json({
+        success: false,
         error: 'Product key is required'
       });
     }
     
     const result = await dbOps.updateProductInfo(productKey, { displayName, category });
-    const success = result.success;
     
-    if (success) {
+    if (result.success) {
       res.json({
         success: true,
         message: 'Product info updated successfully'
@@ -293,7 +317,7 @@ router.put('/update-product-info', adminAuth, async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        error: 'Failed to update product info'
+        error: result.error || 'Failed to update product info'
       });
     }
     

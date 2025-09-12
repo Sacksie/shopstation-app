@@ -3,10 +3,92 @@ import config from '../config/environments';
 
 const API_URL = config.api.baseUrl;
 
-const ComprehensiveAdminPanel = ({ onBack }) => { // onBack is now a prop to return
-  const [activeTab, setActiveTab] = useState('inventory');
+// Re-introducing the Auth Gate
+const AdminAuth = ({ onAuthenticated }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // Authentication is removed. The panel is always visible.
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (!password) return;
+    setIsAuthenticating(true);
+    setError('');
+
+    try {
+      // Use a lightweight endpoint for auth check, like /api/test
+      const response = await fetch(`${API_URL}/api/test`, {
+        headers: { 'x-admin-password': password },
+      });
+
+      if (response.ok) {
+        onAuthenticated(password);
+      } else {
+        setError('Invalid password. Please try again.');
+      }
+    } catch (err) {
+      setError('Connection error. Please check your network.');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full bg-white shadow-lg rounded-xl p-8">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Admin Access</h2>
+          <p className="text-gray-500 mt-2">Enter password to continue</p>
+        </div>
+        <form onSubmit={handleAuth} className="space-y-6">
+          <div>
+            <label
+              htmlFor="admin-password"
+              className="block text-sm font-medium text-gray-700 sr-only"
+            >
+              Admin Password
+            </label>
+            <input
+              id="admin-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Password"
+              required
+            />
+          </div>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={isAuthenticating}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+          >
+            {isAuthenticating ? 'Authenticating...' : 'Unlock'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const ComprehensiveAdminPanel = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState('inventory');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+
+  const handleAuthenticated = (password) => {
+    setAdminPassword(password);
+    setIsAuthenticated(true);
+  };
+
+  if (!isAuthenticated) {
+    return <AdminAuth onAuthenticated={handleAuthenticated} />;
+  }
 
   // Navigation Tabs
   const TabNavigation = () => {
@@ -63,12 +145,12 @@ const ComprehensiveAdminPanel = ({ onBack }) => { // onBack is now a prop to ret
       <TabNavigation />
       
       <div className="container mx-auto px-4 py-6">
-        {activeTab === 'inventory' && <InventoryPage />}
-        {activeTab === 'analytics' && <AnalyticsPage />}
-        {activeTab === 'add-product' && <AddProductPage />}
-        {activeTab === 'backup' && <BackupPage />}
-        {activeTab === 'settings' && <SettingsPage />}
-        {activeTab === 'monitoring' && <MonitoringPage />}
+        {activeTab === 'inventory' && <InventoryPage adminPassword={adminPassword} />}
+        {activeTab === 'analytics' && <AnalyticsPage adminPassword={adminPassword} />}
+        {activeTab === 'add-product' && <AddProductPage adminPassword={adminPassword} />}
+        {activeTab === 'backup' && <BackupPage adminPassword={adminPassword} />}
+        {activeTab === 'settings' && <SettingsPage adminPassword={adminPassword} />}
+        {activeTab === 'monitoring' && <MonitoringPage adminPassword={adminPassword} />}
       </div>
     </div>
   );
@@ -244,7 +326,7 @@ const QuickPriceModal = ({ isOpen, onClose, onSave, productName, storeName, curr
 };
 
 // Page 1: Inventory Management with Enhanced Mobile-First Inline Editing
-const InventoryPage = () => {
+const InventoryPage = ({ adminPassword }) => {
   const [products, setProducts] = useState({});
   const [stores, setStores] = useState({});
   const [editingCell, setEditingCell] = useState(null);
@@ -258,7 +340,9 @@ const InventoryPage = () => {
 
   const fetchInventory = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/manual/inventory`);
+      const response = await fetch(`${API_URL}/api/manual/inventory`, {
+        headers: { 'x-admin-password': adminPassword },
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -269,7 +353,7 @@ const InventoryPage = () => {
       console.error('Error fetching inventory:', error);
     }
     setLoading(false);
-  }, []);
+  }, [adminPassword]);
 
   useEffect(() => {
     fetchInventory();
@@ -302,6 +386,7 @@ const InventoryPage = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-admin-password': adminPassword,
           },
           body: JSON.stringify({
             store,
@@ -317,6 +402,7 @@ const InventoryPage = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-admin-password': adminPassword,
           },
           body: JSON.stringify({
             store,
@@ -330,6 +416,7 @@ const InventoryPage = () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            'x-admin-password': adminPassword,
           },
           body: JSON.stringify({
             productKey: productKey,
@@ -367,6 +454,7 @@ const InventoryPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-admin-password': adminPassword,
         },
         body: JSON.stringify({
           store: quickPriceModal.store,
@@ -626,7 +714,7 @@ const InventoryPage = () => {
 };
 
 // Page 2: Analytics Dashboard
-const AnalyticsPage = () => {
+const AnalyticsPage = ({ adminPassword }) => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('7');
@@ -634,7 +722,9 @@ const AnalyticsPage = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/analytics?days=${timeframe}`);
+        const response = await fetch(`${API_URL}/api/analytics?days=${timeframe}`, {
+          headers: { 'x-admin-password': adminPassword },
+        });
         const data = await response.json();
         setAnalytics(data);
       } catch (error) {
@@ -644,7 +734,7 @@ const AnalyticsPage = () => {
     };
 
     fetchAnalytics();
-  }, [timeframe]);
+  }, [timeframe, adminPassword]);
 
   if (loading) {
     return <div className="text-center py-8">Loading analytics...</div>;
@@ -724,7 +814,7 @@ const AnalyticsPage = () => {
 };
 
 // Page 3: Enhanced Product Addition with Mobile-First Design
-const AddProductPage = () => {
+const AddProductPage = ({ adminPassword }) => {
   const [stores] = useState(['B Kosher', 'Tapuach', 'Kosher Kingdom', 'Kays']);
   const [productName, setProductName] = useState('');
   const [category, setCategory] = useState('uncategorized');
@@ -749,7 +839,9 @@ const AddProductPage = () => {
     }
     
     try {
-      const response = await fetch(`${API_URL}/api/manual/inventory`);
+      const response = await fetch(`${API_URL}/api/manual/inventory`, {
+        headers: { 'x-admin-password': adminPassword },
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -834,6 +926,7 @@ const AddProductPage = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-admin-password': adminPassword,
           },
           body: JSON.stringify({
             store,
@@ -893,6 +986,7 @@ const AddProductPage = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'x-admin-password': adminPassword,
             },
             body: JSON.stringify({
               store: product.store,
@@ -1109,7 +1203,7 @@ Eggs, Kosher Kingdom, 3.10, dozen"
 };
 
 // Page 4: Backup & Restore System
-const BackupPage = () => {
+const BackupPage = ({ adminPassword }) => {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -1119,14 +1213,16 @@ const BackupPage = () => {
 
   const fetchBackups = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/backup/status`);
+      const response = await fetch(`${API_URL}/api/backup/status`, {
+        headers: { 'x-admin-password': adminPassword },
+      });
       const data = await response.json();
       setBackups(data.backups || []);
     } catch (error) {
       console.error('Error fetching backups:', error);
     }
     setLoading(false);
-  }, []);
+  }, [adminPassword]);
 
   useEffect(() => {
     fetchBackups();
@@ -1144,6 +1240,7 @@ const BackupPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-admin-password': adminPassword,
         }
       });
 
@@ -1170,6 +1267,7 @@ const BackupPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-admin-password': adminPassword,
         },
         body: JSON.stringify({ reason: 'manual-admin-panel' })
       });
@@ -1201,6 +1299,7 @@ const BackupPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-admin-password': adminPassword,
         },
         body: JSON.stringify({ filename: latestBackup.filename })
       });
@@ -1349,7 +1448,7 @@ const BackupPage = () => {
 };
 
 // Page 5: Settings
-const SettingsPage = () => {
+const SettingsPage = ({ adminPassword }) => {
   const [settings, setSettings] = useState({
     autoBackupInterval: '4',
     maxBackupsToKeep: '10',
@@ -1438,7 +1537,7 @@ const SettingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Current Password:</span>
-                  <span className="ml-2 font-mono bg-gray-200 px-2 py-1 rounded">Gavtalej22</span>
+                  <span className="ml-2 font-mono bg-gray-200 px-2 py-1 rounded">●●●●●●●●●●</span>
                 </div>
                 <div>
                   <span className="font-medium">API URL:</span>
@@ -1458,17 +1557,21 @@ const SettingsPage = () => {
 };
 
 // Page 6: System Health Monitoring
-const MonitoringPage = () => {
+const MonitoringPage = ({ adminPassword }) => {
   const [systemHealth, setSystemHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSystemHealth = async () => {
       try {
-        const healthResponse = await fetch(`${API_URL}/api/health`);
+        const healthResponse = await fetch(`${API_URL}/api/health`, {
+          headers: { 'x-admin-password': adminPassword },
+        });
         const health = await healthResponse.json();
 
-        const inventoryResponse = await fetch(`${API_URL}/api/manual/inventory`);
+        const inventoryResponse = await fetch(`${API_URL}/api/manual/inventory`, {
+          headers: { 'x-admin-password': adminPassword },
+        });
         const inventory = await inventoryResponse.json();
 
         setSystemHealth({
@@ -1487,7 +1590,7 @@ const MonitoringPage = () => {
     const interval = setInterval(fetchSystemHealth, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [adminPassword]);
 
   if (loading) {
     return <div className="text-center py-8">Loading system health...</div>;

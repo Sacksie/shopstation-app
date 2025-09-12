@@ -1,0 +1,12 @@
+---
+description:
+1. Every feature → /test/[feature-name]
+2. Seed with at least 10 realistic sample records
+3. Display state transitions live on screen
+4. Log ALL API requests/responses
+5. Unit tests for utils/services (Vitest)
+6. Integration tests for flows (Vitest + Supabase test DB)
+7. E2E tests for core flows (Playwright)
+globs:
+alwaysApply: true
+---

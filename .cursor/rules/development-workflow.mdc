@@ -1,0 +1,14 @@
+---
+description:
+globs:
+alwaysApply: true
+When I ask for a feature:
+
+1. Write plain-English summary (WHAT + WHY).
+2. List dependencies (with reason).
+3. Show file structure changes.
+4. Deliver COMPLETE, running code (no TODO placeholders).
+5. Provide test data + test steps.
+6. Anticipate common errors + fixes.
+7. Suggest 2-3 “future scale” improvements (but do NOT build yet).
+---

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import storePortalApi from '../services/storePortalApi';
+import { storePortalSampleData } from '../test-data/storePortalSampleData';
+import InventoryImporter from './InventoryImporter';
+import InventoryDashboard from './dashboards/InventoryDashboard';
+import PricingEngineDashboard from './dashboards/PricingEngineDashboard';
+import CostOfGoodsDashboard from './dashboards/CostOfGoodsDashboard';
+import LearnMorePopup from './LearnMorePopup';
 
 const StorePortal = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -8,31 +14,26 @@ const StorePortal = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user, login, logout, loading: authLoading, error: authError } = useAuth();
-  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const { user, logout, loading: authLoading, error: authError } = useAuth();
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [showImporter, setShowImporter] = useState(false);
+  const [showLearnMorePopup, setShowLearnMorePopup] = useState(false);
 
-  // Auto-login effect for demo purposes
   useEffect(() => {
-    // If there's no user, we're not in an auth loading state, and we haven't tried to log in yet...
-    if (!user && !authLoading && !autoLoginAttempted) {
-      // Set that we've attempted the login to prevent loops
-      setAutoLoginAttempted(true);
-      console.log("Attempting automatic login for demo user 'owner@koshercorner.com'...");
-      // Fire the login request (password is not needed for this temporary solution)
-      login('owner@koshercorner.com', 'test123').then(result => {
-        console.log('Auto-login result:', result);
-      }).catch(error => {
-        console.error('Auto-login error:', error);
-      });
-    }
-  }, [user, authLoading, login, autoLoginAttempted]);
-
-  // Load data when component mounts or tab changes, but only if a user is successfully logged in.
-  useEffect(() => {
+    // If a user is logged in, fetch their live data.
     if (user) {
+      setIsDemoMode(false);
       loadData();
+    } 
+    // Otherwise, activate demo mode with sample data.
+    else if (!authLoading) {
+      console.log("No user found. Activating Demo Mode.");
+      setIsDemoMode(true);
+      setStoreData(storePortalSampleData);
+      setProducts(storePortalSampleData.products);
+      setLoading(false);
     }
-  }, [activeTab, user]);
+  }, [activeTab, user, authLoading]);
 
   const loadData = async () => {
     try {
@@ -81,6 +82,11 @@ const StorePortal = () => {
 
   const handlePriceUpdate = async (productId, newPrice) => {
     try {
+      // In demo mode, we simulate the update locally.
+      if (isDemoMode) {
+        setProducts(products.map(p => p.id === productId ? { ...p, price: parseFloat(newPrice) } : p));
+        return; 
+      }
       const result = await storePortalApi.updateProductPrice(productId, newPrice);
       if (result.success) {
         // Update local state
@@ -99,35 +105,27 @@ const StorePortal = () => {
   };
 
   // Handle various loading and error states for authentication and data fetching.
-  if (authLoading) {
+  if (authLoading && !isDemoMode) {
     return <div className="text-center p-8">Authenticating...</div>;
   }
-
+  
+  // This error is now only relevant for actual login attempts, not the demo.
   if (authError && !user) {
-    console.log('StorePortal: authError detected:', authError);
-    console.log('StorePortal: user state:', user);
-    console.log('StorePortal: authLoading state:', authLoading);
     return (
       <div className="text-center p-8 text-red-500">
-        <h2 className="text-xl font-bold mb-2">Store Portal Access Denied</h2>
-        <p>We couldn't automatically log you in as the demo user.</p>
+        <h2 className="text-xl font-bold mb-2">Login Failed</h2>
+        <p>The credentials provided were incorrect. Please try again.</p>
         <p className="text-sm mt-2 font-mono bg-red-100 p-2 rounded">Error: {authError}</p>
         <button 
-          onClick={() => window.location.reload()} 
+          onClick={() => window.location.href = '/login'} // Redirect to a proper login page
           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Retry Login
+          Go to Login
         </button>
       </div>
     );
   }
   
-  if (!user) {
-    // This state can be reached briefly before auto-login triggers or if it fails.
-    // The authError check above provides a better failure message.
-    return <div className="text-center p-8">Please wait, authenticating demo user...</div>;
-  }
-
   if (loading) {
     return <div className="text-center p-8">Loading Store Portal...</div>;
   }
@@ -149,15 +147,26 @@ const StorePortal = () => {
               <p className="text-blue-100">Your store's command center for growth.</p>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-blue-100">
-                Welcome, {user?.email || 'Store Owner'}
-              </span>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white text-sm font-medium transition-colors"
-              >
-                Logout
-              </button>
+              {isDemoMode ? (
+                 <a
+                    href="mailto:gavrielsacks21@gmail.com"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm font-medium transition-colors"
+                  >
+                    Contact Us
+                  </a>
+              ) : (
+                <>
+                  <span className="text-blue-100">
+                    Welcome, {user?.email || 'Store Owner'}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white text-sm font-medium transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -167,9 +176,11 @@ const StorePortal = () => {
           <nav className="flex space-x-8">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'pricing', label: 'Price Intelligence', icon: '🏷️' },
-              { id: 'demand', label: 'Customer Demand', icon: '📈' },
               { id: 'products', label: 'My Products', icon: '🛍️' },
+              { id: 'inventory', label: 'Live Inventory', icon: '📦' },
+              { id: 'pricingEngine', label: 'Dynamic Pricing', icon: '🤖' },
+              { id: 'costs', label: 'Cost Tracking', icon: '🧾' },
+              { id: 'demand', label: 'Customer Demand', icon: '📈' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -187,6 +198,24 @@ const StorePortal = () => {
           </nav>
         </div>
       </div>
+
+       {/* DEMO MODE BANNER */}
+      {isDemoMode && (
+        <div className="bg-yellow-200 text-yellow-900 text-center p-2 font-semibold">
+          <p>
+            You are viewing a live demo. All data is for illustrative purposes. 
+            <button
+              onClick={() => setShowLearnMorePopup(true)}
+              className="underline ml-2 hover:text-yellow-900 font-semibold"
+            >
+              Learn More
+            </button>
+          </p>
+        </div>
+      )}
+
+      {showImporter && <InventoryImporter onCancel={() => setShowImporter(false)} />}
+      {showLearnMorePopup && <LearnMorePopup onClose={() => setShowLearnMorePopup(false)} />}
 
       {/* Content */}
       <div className="p-6">
@@ -289,22 +318,39 @@ const StorePortal = () => {
           </div>
         )}
 
-        {/* Phase 1.2: Competitive Price Intelligence Tab */}
-        {!loading && !error && activeTab === 'pricing' && storeData?.priceIntelligenceReport && (
-          <PriceIntelligenceDashboard data={storeData.priceIntelligenceReport} />
-        )}
-
-        {/* Phase 1.3: Customer Demand Analytics Tab */}
-        {!loading && !error && activeTab === 'demand' && storeData?.demandAnalyticsReport && (
-            <CustomerDemandDashboard data={storeData.demandAnalyticsReport} />
-        )}
-
-        {/* Phase 1.5: My Products Tab */}
+        {/* My Products Tab */}
         {!loading && !error && activeTab === 'products' && (
             <MyProductsDashboard 
                 products={products} 
                 onPriceUpdate={handlePriceUpdate}
+                onImportClick={() => setShowImporter(true)}
             />
+        )}
+        
+        {/* --- DEMO ONLY TABS --- */}
+        {isDemoMode && !loading && !error && storeData && (
+          <>
+            {activeTab === 'inventory' && <InventoryDashboard data={storeData.inventory} />}
+            {activeTab === 'pricingEngine' && <PricingEngineDashboard data={storeData.pricingEngine} />}
+            {activeTab === 'costs' && <CostOfGoodsDashboard data={storeData.costOfGoods} />}
+          </>
+        )}
+
+        {/* Fallback for real users on demo tabs */}
+        {!isDemoMode && (['inventory', 'pricingEngine', 'costs'].includes(activeTab)) && (
+          <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
+              <h3 className="text-2xl font-bold text-gray-800">Feature Coming Soon!</h3>
+              <p className="text-gray-600 mt-2">This section is part of our planned rollout. We're building it!</p>
+          </div>
+        )}
+        
+        {/* Price Intelligence & Demand are now part of the demo data structure as well */}
+        {!loading && !error && activeTab === 'pricing' && storeData?.priceIntelligenceReport && (
+          <PriceIntelligenceDashboard data={storeData.priceIntelligenceReport} />
+        )}
+
+        {!loading && !error && activeTab === 'demand' && storeData?.demandAnalyticsReport && (
+            <CustomerDemandDashboard data={storeData.demandAnalyticsReport} />
         )}
 
         {/* Placeholder for other tabs */}
@@ -320,7 +366,7 @@ const StorePortal = () => {
 };
 
 // Sub-component for My Products Dashboard
-const MyProductsDashboard = ({ products, onPriceUpdate }) => {
+const MyProductsDashboard = ({ products, onPriceUpdate, onImportClick }) => {
     const [editingId, setEditingId] = useState(null);
     const [newPrice, setNewPrice] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -345,9 +391,14 @@ const MyProductsDashboard = ({ products, onPriceUpdate }) => {
             <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">My Product Inventory</h3>
-                    <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                      + Add New Product
-                    </button>
+                    <div className="flex space-x-2">
+                      <button onClick={onImportClick} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        + Import Inventory
+                      </button>
+                      <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                        + Add New Product
+                      </button>
+                    </div>
                 </div>
                 
                 <input 

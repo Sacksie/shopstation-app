@@ -1,0 +1,15 @@
+---
+description:
+1. Secrets → .env (NEVER in repo)
+2. Always sanitize user input (client + server)
+3. Rate limiting on all APIs
+4. Deploy behind HTTPS always
+5. Caching: client-side + CDN
+6. Image optimization (Next.js Image)
+7. Performance budget: <2s TTFB, <3s LCP
+8. Default to static generation (ISR fallback)
+9. Security headers via Next.js middleware
+10. Regular backups of Supabase DB
+globs:
+alwaysApply: true
+---

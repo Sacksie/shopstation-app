@@ -1,0 +1,35 @@
+---
+description: 
+1. Comments must explain INTENT, not just code mechanics.
+   Bad: // increment i
+   Good: // Advance pointer to next store in user’s selection loop
+
+2. Naming must reflect domain model:
+   - "shoppingList" not "sl"
+   - "comparePrices" not "cmp"
+
+3. All code must be modular, testable, and composable.
+
+4. Functions max 20 lines → extract helpers.
+
+5. Error handling required in ALL user-facing code.
+   - Errors should log → Sentry
+   - Errors should show → toast/error boundary
+   - Errors should fallback gracefully
+
+6. File organization = scalable tree:
+   /app (Next.js routes)
+   /components (UI)
+   /features (vertical slices: search, lists, auth)
+   /utils (helpers)
+   /hooks (custom React hooks)
+   /types (TS types/interfaces)
+   /services (API/db layer)
+   /test (manual test pages)
+
+7. One component per file, file name = component name.
+
+8. Always write sample data + usage example near functions.
+globs:
+alwaysApply: true
+---
