@@ -3,6 +3,15 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// --- DIAGNOSTIC PROBE ---
+console.log('--- Vercel Environment Variable Diagnostics ---');
+console.log(`'ADMIN_PASSWORD' exists: ${!!process.env.ADMIN_PASSWORD}`);
+if (process.env.ADMIN_PASSWORD) {
+  console.log(`'ADMIN_PASSWORD' length: ${process.env.ADMIN_PASSWORD.length}`);
+}
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+console.log('-------------------------------------------');
+
 // CRITICAL SECURITY CHECK for Admin Password
 if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'temp-password-123' || process.env.ADMIN_PASSWORD.length < 10)) {
   console.error('FATAL ERROR: ADMIN_PASSWORD is not set, is insecure, or is too short.');
